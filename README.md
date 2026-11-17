@@ -22,7 +22,10 @@ Units are `hbar = m = 1` throughout.
 | 2D Poisson and heat equations (sparse) | direct sparse LU, CG, CG + Jacobi, CG + incomplete Cholesky (IC(0), written here), geometric multigrid V-cycle, multigrid-preconditioned CG; backward Euler / Crank–Nicolson heat solver |
 
 Test potentials: harmonic oscillator and Morse potential (both with closed-form spectra) and a
-double well (no closed form; compared with a converged Chebyshev reference).
+double well (no closed form; compared with a converged Chebyshev reference). Two hard-wall
+problems test the boundary treatment, because their eigenfunctions have a non-zero slope at the
+wall: the infinite square well (exact levels `n²π²/(2L²)`) and a linear ramp `V = x` with a wall at
+`x = 0` (exact levels from the zeros of the Airy function).
 
 All stationary solvers share one interface (`StationarySolver.solve(potential, x_min, x_max,
 n_points, n_states)`), all propagators share another (`TimeDependentSolver.propagate(psi0,
@@ -138,7 +141,13 @@ Tunnel splitting of the lowest double-well doublet from every method:
 
 ![Potentials, energy levels and wave functions](docs/figures/stationary_states.png)
 
-Notes. `shooting` solves the same discrete problem as the Numerov matrix (the Numerov recurrence
+Notes. The five-point stencil of `fd4` needs ψ one node *outside* the box next to each wall.
+The solver uses the odd extension `ψ(x_wall − h) = −ψ(x_wall + h)`, which is consistent with
+`ψ = 0` and `ψ'' = 2(V − E)ψ = 0` at the wall and keeps the method fourth order at hard walls; a
+zero ghost value would make it first order there (the potentials in the tables above cannot show
+the difference, because their states vanish long before the walls). The test suite measures the
+order of every Dirichlet solver on the infinite well and on the linear ramp.
+`shooting` solves the same discrete problem as the Numerov matrix (the Numerov recurrence
 with a Dirichlet wall), so the two agree to the bisection tolerance on the same grid; shooting
 only adds the cost of Python loops. The shooting node count relies on `h²(V_max − V_min) < 6`
 (otherwise the Numerov coefficient changes sign); the solver warns when this is violated, which
@@ -388,7 +397,8 @@ mypy src/pdeqs
 
 The test suite checks, among other things: CN temporal order 2 (and spatial order 2); split-step
 and CN norm conservation below 1e-10 over thousands of steps (1D and 2D); RK4 order 4 and its
-instability above the stability limit; oscillator and Morse eigenvalues for every solver;
+instability above the stability limit; oscillator and Morse eigenvalues for every solver; the
+order of every Dirichlet solver on the infinite well and on a linear ramp;
 shooting ≡ Numerov on the same grid; analytic limits of `T(E)`; second-order convergence of the
 scattering solver; grid-independent multigrid contraction; CG iteration growth; and CLI
 behaviour. `.github/workflows/ci.yml` runs lint, type check and tests on Python 3.10–3.13. That
@@ -404,8 +414,9 @@ run locally.
   representative of a compiled implementation.
 - Dense eigensolvers (`numerov`, `fourier`, `chebyshev`) scale as `O(N³)`; they are used for
   `N` up to a few thousand only.
-- 1D stationary problems only; Dirichlet walls (Fourier: periodic). The time-dependent solvers
-  assume a time-independent potential and a uniform grid.
+- 1D stationary problems only; Dirichlet walls. The Fourier solver is periodic, so it does not
+  model hard walls: on the infinite well it returns the spectrum of a periodic box. The
+  time-dependent solvers assume a time-independent potential and a uniform grid.
 - Time-dependent convergence is demonstrated mainly on a smooth Gaussian in a harmonic potential.
   Discontinuous potentials (the barrier) reduce observed accuracy; for the barrier the edge is
   placed between grid points deliberately to retain second-order behaviour.

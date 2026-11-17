@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from pdeqs.convergence import stationary_study
-from pdeqs.potentials import DoubleWell, Harmonic, Morse
+from pdeqs.potentials import DoubleWell, Harmonic, InfiniteWell, LinearRamp, Morse
 from pdeqs.stationary import SOLVERS, align_sign, chebyshev_matrix, clenshaw_curtis_weights
 
 # (n_points, tolerance on the max error of the 4 lowest levels)
@@ -132,3 +132,53 @@ def test_clenshaw_curtis_weights_integrate_smooth_functions():
 def test_chebyshev_differentiation_matrix_is_exact_for_polynomials():
     d, x = chebyshev_matrix(12)
     assert np.max(np.abs(d @ x**5 - 5 * x**4)) < 1e-10
+
+
+# Hard walls: the eigenfunctions have psi' != 0 at the wall, which the three smooth potentials
+# above never test (their states have decayed long before the box edge).
+WALL_ORDERS = {"fd2": 2.0, "fd4": 4.0, "numerov": 4.0, "shooting": 4.0}
+
+
+def _orders(errors: list[float]) -> np.ndarray:
+    e = np.asarray(errors)
+    return np.log2(e[:-1] / e[1:])  # h is halved exactly between refinements
+
+
+@pytest.mark.parametrize("method", list(WALL_ORDERS))
+def test_infinite_well_order_of_every_dirichlet_solver(method):
+    pot = InfiniteWell()
+    errs = []
+    for n in (39, 79, 159, 319):  # h = 1 / (n + 1)
+        e = SOLVERS[method].solve(pot, *pot.box, n, 4).energies
+        errs.append(np.max(np.abs(e - pot.exact_energies(4))))
+    orders = _orders(errs)
+    assert np.all(np.abs(orders - WALL_ORDERS[method]) < 0.1), orders
+
+
+@pytest.mark.parametrize("method", ["fd2", "fd4", "numerov"])
+def test_linear_ramp_order(method):
+    """V = x with a hard wall at 0; exact levels from the zeros of the Airy function."""
+    pot = LinearRamp()
+    errs = []
+    for n in (149, 299, 599):  # h = 30 / (n + 1)
+        e = SOLVERS[method].solve(pot, *pot.box, n, 4).energies
+        errs.append(np.max(np.abs(e - pot.exact_energies(4))))
+    orders = _orders(errs)
+    assert np.all(np.abs(orders - WALL_ORDERS[method]) < 0.1), orders
+
+
+def test_linear_ramp_exact_levels_are_airy_zeros():
+    # Ai(-2.33810741) = 0, the first zero of Ai, so E_0 = 2.33810741 / 2^(1/3)
+    assert LinearRamp().exact_energies(1)[0] == pytest.approx(2.33810741 / 2 ** (1 / 3), abs=1e-8)
+
+
+def test_chebyshev_is_spectrally_accurate_at_hard_walls():
+    for pot, n in ((InfiniteWell(), 32), (LinearRamp(), 96)):
+        e = SOLVERS["chebyshev"].solve(pot, *pot.box, n, 4).energies
+        assert np.max(np.abs(e - pot.exact_energies(4))) < 1e-11, pot.name
+
+
+def test_fourier_solver_is_periodic_so_it_does_not_model_hard_walls():
+    """On [0, L] the Fourier solver returns the periodic spectrum (2 pi m / L)^2 / 2."""
+    e = SOLVERS["fourier"].solve(InfiniteWell(), 0.0, 1.0, 64, 4).energies
+    assert np.allclose(e, 2.0 * np.pi**2 * np.array([0.0, 1.0, 1.0, 4.0]), atol=1e-10)

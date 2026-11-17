@@ -94,7 +94,15 @@ class FiniteDifference2(StationarySolver):
 
 
 class FiniteDifference4(StationarySolver):
-    """Five-point central differences, ``O(h^4)``; symmetric banded eigenproblem."""
+    """Five-point central differences, ``O(h^4)``; symmetric banded eigenproblem.
+
+    Next to each wall the five-point stencil reaches one node *outside* the box.  That ghost
+    value is taken from the odd extension ``psi(x_wall - h) = -psi(x_wall + h)``, which is
+    consistent with ``psi = 0`` and ``psi'' = 2 (V - E) psi = 0`` at the wall, so the
+    eigenvalues stay ``O(h^4)`` also when ``psi'(x_wall) != 0`` (particle in a box, linear
+    ramp).  In the matrix this subtracts ``1/(24 h^2)`` from the first and last diagonal entry.
+    Setting the ghost value to zero instead makes the method first order at hard walls.
+    """
 
     name = "fd4"
     order = "4"
@@ -106,6 +114,9 @@ class FiniteDifference4(StationarySolver):
         ab[0] = 1.25 / h**2 + potential(x)
         ab[1, : n - 1] = -(2.0 / 3.0) / h**2
         ab[2, : n - 2] = (1.0 / 24.0) / h**2
+        # odd ghost node at each wall: the coupling to psi(-h) = -psi(h) moves onto the diagonal
+        ab[0, 0] -= (1.0 / 24.0) / h**2
+        ab[0, -1] -= (1.0 / 24.0) / h**2
         w, v = eig_banded(ab, lower=True, select="i", select_range=(0, k - 1))
         return x, w, _normalise_columns(v, h)
 

@@ -16,7 +16,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .grid import Grid
-from .potentials import DoubleWell, Harmonic, Morse, Potential1D
+from .potentials import DoubleWell, Harmonic, InfiniteWell, LinearRamp, Morse, Potential1D
 from .stationary import SOLVERS, StationarySolver
 from .timedep import (
     RK4,
@@ -115,6 +115,14 @@ POTENTIALS: dict[str, Potential1D] = {
     "morse": Morse(),
 }
 
+#: Potentials whose eigenfunctions have a non-zero slope at a hard wall (Dirichlet solvers only).
+HARD_WALL_POTENTIALS: dict[str, Potential1D] = {
+    "infinite-well": InfiniteWell(),
+    "linear-ramp": LinearRamp(),
+}
+
+ALL_POTENTIALS: dict[str, Potential1D] = {**POTENTIALS, **HARD_WALL_POTENTIALS}
+
 
 def reference_energies(potential: Potential1D, n_states: int) -> tuple[FloatArray, str]:
     """Analytic energies if known, else a converged Chebyshev spectrum (N = 240)."""
@@ -133,7 +141,7 @@ def stationary_study(
 ) -> ConvergenceStudy:
     """Max error over the lowest ``n_states`` levels against a trusted reference."""
     solver: StationarySolver = SOLVERS[method]
-    potential = POTENTIALS[potential_name]
+    potential = ALL_POTENTIALS[potential_name]
     ref, ref_name = reference_energies(potential, n_states)
     sizes = list(sizes) if sizes is not None else STATIONARY_SIZES[method]
     x_min, x_max = potential.box

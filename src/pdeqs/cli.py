@@ -11,6 +11,7 @@ import numpy as np
 
 from . import __version__
 from .convergence import (
+    ALL_POTENTIALS,
     POTENTIALS,
     STATIONARY_SIZES,
     TIME_STEPS,
@@ -141,7 +142,7 @@ def cmd_convergence(args: argparse.Namespace) -> int:
 
 
 def cmd_eigen(args: argparse.Namespace) -> int:
-    pot = POTENTIALS[args.potential]
+    pot = ALL_POTENTIALS[args.potential]
     x_min, x_max = pot.box
     with warnings.catch_warnings():
         warnings.simplefilter("always")
@@ -209,7 +210,7 @@ def cmd_list(_: argparse.Namespace) -> int:
     print("stationary solvers :", ", ".join(SOLVERS))
     print("time-dependent     :", ", ".join(TIME_METHODS))
     print("poisson solvers    :", ", ".join(POISSON_SOLVERS))
-    print("potentials         :", ", ".join(POTENTIALS))
+    print("potentials         :", ", ".join(ALL_POTENTIALS))
     return 0
 
 
@@ -222,7 +223,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     c = sub.add_parser("convergence", help="empirical order of convergence of one method")
     c.add_argument("method", choices=CONVERGENCE_TARGETS)
-    c.add_argument("--potential", choices=[*POTENTIALS, "all"], default="harmonic")
+    c.add_argument("--potential", choices=[*ALL_POTENTIALS, "all"], default="harmonic")
     c.add_argument("--dim", type=int, choices=(1, 2), default=1, help="time-dependent methods only")
     c.add_argument("--quick", action="store_true", help="fewer refinements (fast)")
     c.add_argument("--no-plot", action="store_true")
@@ -230,7 +231,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(func=cmd_convergence)
 
     e = sub.add_parser("eigen", help="lowest eigenvalues of a 1D potential")
-    e.add_argument("--potential", choices=list(POTENTIALS), default="harmonic")
+    e.add_argument("--potential", choices=list(ALL_POTENTIALS), default="harmonic")
     e.add_argument("--method", choices=list(SOLVERS), default="numerov")
     e.add_argument("-n", "--n-points", type=int, default=400)
     e.add_argument("--states", type=int, default=6)

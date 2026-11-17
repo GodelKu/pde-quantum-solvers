@@ -101,6 +101,55 @@ class Morse:
 
 
 @dataclass(frozen=True)
+class InfiniteWell:
+    """``V = 0`` between hard walls at ``0`` and ``L``: ``E_n = (n+1)^2 pi^2 / (2 L^2)``.
+
+    The wave function has a non-zero slope at the walls, so this tests the boundary treatment
+    of every Dirichlet solver.  The periodic Fourier solver does not apply.
+    """
+
+    length: float = 1.0
+    name: str = "infinite-well"
+
+    @property
+    def box(self) -> tuple[float, float]:
+        return (0.0, self.length)
+
+    def __call__(self, x: FloatArray) -> FloatArray:
+        return np.zeros_like(x)
+
+    def exact_energies(self, n: int) -> FloatArray:
+        return (np.arange(1, n + 1) * np.pi / self.length) ** 2 / 2.0
+
+
+@dataclass(frozen=True)
+class LinearRamp:
+    """``V = F x`` for ``x > 0`` with a hard wall at ``x = 0`` (box ``[0, x_max]``).
+
+    With ``z = (2 F)^(1/3) (x - E / F)`` the equation becomes Airy's, ``psi = Ai(z)``, and the
+    wall condition ``Ai(-(2 F)^(1/3) E / F) = 0`` gives ``E_n = -a_n F / (2 F)^(1/3)`` with
+    ``a_n`` the zeros of ``Ai``.  ``x_max`` only has to lie far in the forbidden region.
+    """
+
+    force: float = 1.0
+    x_max: float = 30.0
+    name: str = "linear-ramp"
+
+    @property
+    def box(self) -> tuple[float, float]:
+        return (0.0, self.x_max)
+
+    def __call__(self, x: FloatArray) -> FloatArray:
+        return self.force * x
+
+    def exact_energies(self, n: int) -> FloatArray:
+        from scipy.special import ai_zeros
+
+        zeros = ai_zeros(n)[0]
+        return -zeros * self.force / (2.0 * self.force) ** (1.0 / 3.0)
+
+
+@dataclass(frozen=True)
 class RectangularBarrier:
     """``V = height`` for ``|x| < width/2`` and ``0`` elsewhere."""
 
