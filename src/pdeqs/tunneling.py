@@ -15,6 +15,7 @@ this effective width.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, TypeAlias
 
@@ -54,8 +55,11 @@ def transmission_fd(
 ) -> FDTransmission:
     """Finite-difference scattering ``T(E)``, ``R(E)`` for a barrier of ``n_barrier`` grid points.
 
-    Uses the lattice dispersion ``E = (1 - cos(q h)) / h^2`` in the boundary conditions, so that
-    the only error is the discretisation of the equation inside the barrier region.
+    The boundary conditions use the lattice dispersion ``E = (1 - cos(q h)) / h^2``, so they are
+    exact (transparent) for the *discrete* equation and introduce no reflection of their own.
+    The difference from the continuum ``T(E)`` is the discretisation of the equation: inside the
+    barrier, and outside it as well, where the lattice wavenumber ``q`` at energy ``E`` differs
+    from ``sqrt(2 E)`` at ``O(h^2)``.
     """
     if n_barrier % 2 == 0:
         raise ValueError("n_barrier must be odd")
@@ -113,6 +117,42 @@ class PacketTransmission:
     effective_width: float
 
 
+def _transmitted_probability(
+    k0: float,
+    height: float,
+    width: float,
+    sigma: float,
+    length: float,
+    n: int,
+    start: float,
+    dt: float,
+    multiples: Sequence[int],
+) -> tuple[list[float], float, float]:
+    """``P(x > barrier)`` at ``m * t1`` for each ``m`` in ``multiples``, ``t1 = 2 |start| / k0``.
+
+    ``t1`` is the time the packet centre needs to reach the same distance beyond the barrier.
+    Returns the probabilities, the largest norm drift seen and the effective barrier width.
+    """
+    grid = Grid.line(n, length)
+    (x,) = grid.axes()
+    eff_width, _ = snap_width(width, grid.h[0])
+    v = np.where(np.abs(x) < 0.5 * eff_width, height, 0.0)
+    psi = gaussian_packet(grid, (start,), sigma, (k0,))
+    t1 = 2.0 * abs(start) / k0
+    n1 = int(np.ceil(t1 / dt))
+    solver = SplitStepFourier(grid, v)
+    solver.prepare(t1 / n1)
+    norm0 = grid.norm(psi)
+    out, drift, done = [], 0.0, 0
+    for m in multiples:
+        for _ in range(m * n1 - done):
+            psi = solver.step(psi)
+        done = m * n1
+        out.append(float(np.sum(np.abs(psi[x > 0.5 * eff_width]) ** 2) * grid.h[0]))
+        drift = max(drift, abs(grid.norm(psi) - norm0))
+    return out, drift, eff_width
+
+
 def packet_transmission(
     k0: float,
     height: float = 1.0,
@@ -123,25 +163,50 @@ def packet_transmission(
     start: float = -30.0,
     dt: float = 0.02,
 ) -> PacketTransmission:
-    """Transmitted probability ``P(x > 0)`` after a head-on collision (split-step Fourier)."""
-    grid = Grid.line(n, length)
-    (x,) = grid.axes()
-    eff_width, _ = snap_width(width, grid.h[0])
-    v = np.where(np.abs(x) < 0.5 * eff_width, height, 0.0)
-    psi0 = gaussian_packet(grid, (start,), sigma, (k0,))
-    # time for the packet centre to reach the same distance beyond the barrier
-    t_final = 2.0 * abs(start) / k0
-    n_steps = int(np.ceil(t_final / dt))
-    solver = SplitStepFourier(grid, v)
-    res = solver.propagate(psi0, t_final, n_steps, n_records=2)
-    prob = np.abs(res.psi) ** 2
-    numeric = float(np.sum(prob[x > 0.5 * eff_width]) * grid.h[0])
+    """Transmitted probability after a head-on collision (split-step Fourier), read at ``t1``.
+
+    ``t1 = 2 |start| / k0``.  The slowest momentum components have not all reached the barrier
+    by then, so ``numeric`` is not a converged value; see :func:`packet_transmission_later`.
+    """
+    (numeric,), drift, eff_width = _transmitted_probability(
+        k0, height, width, sigma, length, n, start, dt, (1,)
+    )
     return PacketTransmission(
         k0,
         sigma,
         numeric,
         averaged_transmission(k0, sigma, height, eff_width),
         float(transmission_rectangular(0.5 * k0**2, height, eff_width)[0]),
-        res.max_norm_drift,
+        drift,
         eff_width,
     )
+
+
+def packet_transmission_later(
+    k0: float,
+    multiples: Sequence[int] = (1, 2, 3),
+    length: float = 800.0,
+    n: int = 16000,
+    height: float = 1.0,
+    width: float = 1.55,
+    sigma: float = 3.0,
+    start: float = -30.0,
+    dt: float = 0.02,
+) -> dict[str, Any]:
+    """Numerical minus exact (momentum-averaged) ``T`` read at ``m * t1`` on a longer box.
+
+    The defaults keep the grid spacing of :func:`packet_transmission` (``h = 0.05``) on a box
+    four times longer, so that the packet does not wrap around the periodic box.
+    """
+    probs, drift, eff_width = _transmitted_probability(
+        k0, height, width, sigma, length, n, start, dt, multiples
+    )
+    exact = averaged_transmission(k0, sigma, height, eff_width)
+    return {
+        "k0": k0,
+        "length": length,
+        "h": length / n,
+        "multiples": list(multiples),
+        "difference": [p - exact for p in probs],
+        "norm_drift": drift,
+    }

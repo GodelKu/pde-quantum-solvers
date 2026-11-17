@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve_triangular
 
 from pdeqs.elliptic import (
     Multigrid,
@@ -8,6 +10,7 @@ from pdeqs.elliptic import (
     conjugate_gradient,
     heat_exact_semidiscrete,
     heat_solve,
+    ic0_factor,
     l2_error,
     manufactured_problem,
     poisson_matrix,
@@ -59,7 +62,7 @@ def test_all_solvers_agree_with_direct_solution(method):
     direct = solve_poisson(f, "direct").x
     res = solve_poisson(f, method, tol=1e-11)
     assert res.converged
-    assert np.max(np.abs(res.x - direct)) < 1e-9 * np.max(np.abs(direct)) * 1e3
+    assert np.max(np.abs(res.x - direct)) < 1e-6 * np.max(np.abs(direct))
 
 
 def test_cg_iterations_grow_linearly_with_n_and_jacobi_changes_nothing():
@@ -165,3 +168,59 @@ def test_prepared_solver_matches_one_shot_solve():
         a = solver.solve(f, tol=1e-12).x
         b = solve_poisson(f, method, shift=50.0, tol=1e-12).x
         assert np.array_equal(a, b), method
+
+
+@pytest.mark.parametrize("shift", [0.0, 2000.0])
+def test_ic0_factor_reproduces_the_matrix_on_its_sparsity_pattern(shift):
+    """IC(0): L has the pattern of tril(A), and L L^T = A wherever A is non-zero."""
+    n = 8
+    a = poisson_matrix(n, shift).toarray()
+    low = ic0_factor(n, shift).toarray()
+    assert np.all(low[np.tril(a) == 0] == 0.0)
+    pattern = a != 0
+    assert np.max(np.abs((low @ low.T - a)[pattern])) < 1e-12 * np.max(np.abs(a))
+    # the dropped fill-in is what makes it incomplete: L L^T != A off the pattern
+    assert np.max(np.abs((low @ low.T)[~pattern])) > 1e-3 * np.max(np.abs(a))
+
+
+def test_ic0_preconditioner_is_plain_triangular_substitution():
+    n, shift = 15, 50.0
+    low = sp.csr_matrix(ic0_factor(n, shift))
+    r = np.random.default_rng(4).standard_normal(n * n)
+    expected = spsolve_triangular(low.T.tocsr(), spsolve_triangular(low, r), lower=False)
+    solver = PoissonSolver(n, "cg-ic0", shift)
+    assert solver._precond is not None
+    assert np.allclose(solver._precond(r), expected, rtol=1e-12, atol=0.0)
+
+
+def test_iteration_counts_are_pinned():
+    """Regression values (README table); +-1 allows for platform rounding at the threshold."""
+    expected = {"cg": (106, 215, 434), "cg-ic0": (35, 67, 132), "mg": (13, 13, 14)}
+    for i, n in enumerate((31, 63, 127)):
+        f, _ = manufactured_problem(n)
+        for method, counts in expected.items():
+            its = solve_poisson(f, method, tol=1e-10).iterations
+            assert abs(its - counts[i]) <= 1, (method, n, its)
+
+
+@pytest.mark.parametrize("method", ["direct", "cg", "cg-ic0", "mg", "mg-cg"])
+def test_zero_right_hand_side_gives_zero_solution(method):
+    res = solve_poisson(np.zeros((15, 15)), method)
+    assert res.converged and not np.any(res.x)
+
+
+def test_heat_solve_from_zero_stays_zero():
+    for ls in ("direct", "cg", "mg-cg"):
+        u = heat_solve(np.zeros((15, 15)), 0.1, 3, "crank-nicolson", ls).u
+        assert np.all(u == 0.0), ls
+
+
+def test_crank_nicolson_undershoots_on_discontinuous_data_backward_euler_does_not():
+    """CN is A-stable but not L-stable: the stiff modes of a discontinuous patch flip sign."""
+    n = 63
+    u0 = np.zeros((n, n))
+    u0[n // 3 : n // 3 + 6, n // 2 : n // 2 + 9] = 1.0
+    cn = heat_solve(u0, 0.001, 1, "crank-nicolson", "direct").u
+    be = heat_solve(u0, 0.001, 1, "backward-euler", "direct").u
+    assert cn.min() < -0.05
+    assert be.min() > -1e-14  # (I - dt Laplacian_h)^-1 has non-negative entries

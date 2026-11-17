@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pdeqs.convergence import spatial_study, temporal_study
+from pdeqs.convergence import rk4_amplification, spatial_study, temporal_study
 from pdeqs.grid import Grid
 from pdeqs.timedep import (
     RK4,
@@ -132,3 +132,23 @@ def test_propagate_rejects_bad_step_count():
         CrankNicolson(grid, v).propagate(np.ones(32, dtype=complex), 1.0, 0)
     with pytest.raises(ValueError):
         CrankNicolson(grid, v[:5])
+
+
+def test_rk4_amplification_crosses_one_at_two_sqrt_two():
+    assert rk4_amplification(2.0 * np.sqrt(2.0)) == pytest.approx(1.0, abs=1e-12)
+    assert rk4_amplification(2.80) < 1.0 < rk4_amplification(2.86)
+
+
+def test_rk4_stability_limit_is_bracketed():
+    """dt * rho(H) = 2.80 stays bounded over t = 20, 2.86 blows up."""
+    grid, v, (x0, p0, om) = harmonic_problem(n=256, length=20.0)
+    psi0 = coherent_state_nd(grid, 0.0, x0, p0, om)
+    solver = RK4(grid, v)
+    rho = np.max(np.abs(np.linalg.eigvalsh(solver.h_mat.toarray())))
+    norms = []
+    for target in (2.80, 2.86):
+        with np.errstate(all="ignore"):
+            res = solver.propagate(psi0, 20.0, round(20.0 * rho / target), n_records=4)
+        norms.append(res.norms[-1])
+    assert abs(norms[0] - 1.0) < 1e-6
+    assert not np.isfinite(norms[1]) or norms[1] > 1e6

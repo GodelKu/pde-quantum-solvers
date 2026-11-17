@@ -148,26 +148,37 @@ def cmd_eigen(args: argparse.Namespace) -> int:
     with warnings.catch_warnings():
         warnings.simplefilter("always")
         res = SOLVERS[args.method].solve(pot, x_min, x_max, args.n_points, args.states)
-    exact = (
-        pot.exact_energies(args.states) if args.states <= getattr(pot, "n_bound", 10**9) else None
-    )
+    n_bound = int(getattr(pot, "n_bound", args.states))
+    n_exact = min(args.states, n_bound)
+    exact = pot.exact_energies(n_exact)
     print(
         f"{args.method} on {args.potential}, N={args.n_points}, box=[{x_min}, {x_max}], "
         f"{res.wall_time * 1e3:.1f} ms"
     )
     for k, e in enumerate(res.energies):
         line = f"  E_{k} = {e:.10f}"
-        if exact is not None:
+        if exact is not None and k < n_exact:
             line += f"   exact {exact[k]:.10f}   error {abs(e - exact[k]):.2e}"
+        elif k >= n_bound:
+            line += "   (not a bound state: continuum discretised by the box)"
         print(line)
+    if args.states > n_bound:
+        print(f"  {args.potential} has {n_bound} bound states; higher levels depend on the box")
     return 0
 
 
 def cmd_evolve(args: argparse.Namespace) -> int:
-    rows = conservation_comparison(args.dim, args.t_final, args.steps, args.n_points)
+    with np.errstate(over="ignore", invalid="ignore"):
+        rows = conservation_comparison(args.dim, args.t_final, args.steps, args.n_points)
     wanted = [r for r in rows if args.method in ("all", r["method"])]
     print(f"harmonic coherent state, {args.dim}D, t_final={args.t_final}, steps={args.steps}")
     for r in wanted:
+        if not np.isfinite(r["l2_error_vs_analytic"]) or r["max_norm_drift"] > 1.0:
+            print(
+                f"  {r['method']:15s} unstable time step: RK4 needs dt * rho(H) < 2 sqrt(2); "
+                "increase --steps"
+            )
+            continue
         print(
             f"  {r['method']:15s} norm drift {sci(float(r['max_norm_drift']))}  "
             f"rel. energy drift {sci(float(r['relative_energy_drift']))}  "
@@ -272,9 +283,52 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _is_multigrid_size(n: int) -> bool:
+    return n >= 3 and (n + 1) & n == 0
+
+
+def validate(args: argparse.Namespace) -> str | None:
+    """Return an error message for argument values the solvers cannot use, else ``None``."""
+    cmd = args.command
+    if cmd == "eigen":
+        if args.n_points < 4:
+            return "-n/--n-points must be at least 4"
+        if not 1 <= args.states <= args.n_points:
+            return f"--states must be between 1 and N = {args.n_points}"
+    elif cmd == "evolve":
+        if args.steps < 1:
+            return "--steps must be at least 1"
+        if args.t_final <= 0:
+            return "--t-final must be positive"
+        if args.n_points is not None and args.n_points < 4:
+            return "-n/--n-points must be at least 4"
+    elif cmd == "tunneling":
+        if args.energy <= 0 or args.height <= 0 or args.width <= 0:
+            return "--energy, --height and --width must be positive"
+        if args.points < 1:
+            return "--points must be at least 1"
+    elif cmd == "poisson":
+        if args.n < 1:
+            return "-n must be at least 1"
+        if args.solver in ("mg", "mg-cg") and not _is_multigrid_size(args.n):
+            return f"--solver {args.solver} needs n = 2^k - 1 >= 3 (for example 31, 63, 127)"
+        if args.tol <= 0:
+            return "--tol must be positive"
+    elif cmd == "report" and args.repeats < 1:
+        return "--repeats must be at least 1"
+    return None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    return int(args.func(args))
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    message = validate(args)
+    if message:
+        parser.error(message)
+    try:
+        return int(args.func(args))
+    except ValueError as exc:  # e.g. an energy outside the lattice band of the FD scattering
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":

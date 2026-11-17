@@ -42,3 +42,33 @@ def test_update_readme_replaces_only_marked_sections(tmp_path: Path):
     found = update_readme(readme, {"t": md_table(["x"], [["1"]]), "missing": "zzz"})
     text = readme.read_text(encoding="utf-8")
     assert found == ["t"] and "old" not in text and "| 1 |" in text and "zzz" not in text
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["poisson", "-n", "30"],
+        ["poisson", "-n", "31", "--tol", "0"],
+        ["eigen", "--method", "fourier", "-n", "4", "--states", "6"],
+        ["eigen", "-n", "2", "--states", "1"],
+        ["evolve", "--steps", "0"],
+        ["tunneling", "--energy", "-1"],
+        ["tunneling", "--energy", "5000", "--points", "5"],  # outside the lattice band
+    ],
+)
+def test_invalid_values_give_an_argparse_error_not_a_traceback(argv, capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(argv)
+    assert exc.value.code == 2
+    assert "error:" in capsys.readouterr().err
+
+
+def test_eigen_marks_morse_levels_above_the_bound_states(capsys):
+    assert main(["eigen", "--potential", "morse", "--states", "7", "-n", "200"]) == 0
+    out = capsys.readouterr().out
+    assert "not a bound state" in out and "5 bound states" in out
+
+
+def test_evolve_reports_an_unstable_rk4_step(capsys):
+    assert main(["evolve", "--method", "rk4", "--steps", "50", "-n", "128"]) == 0
+    assert "unstable time step" in capsys.readouterr().out

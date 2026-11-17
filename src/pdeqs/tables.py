@@ -201,7 +201,7 @@ def _timedep(d: dict[str, Any], out: dict[str, str]) -> None:
             [
                 "Method",
                 "dt",
-                "max abs(norm - 1)",
+                "max abs(norm(t) - norm(0))",
                 "max rel. energy drift",
                 "L2 error vs analytic",
                 "Time (s)",
@@ -209,26 +209,51 @@ def _timedep(d: dict[str, Any], out: dict[str, str]) -> None:
             rows,
         )
 
+    rk = d["rk4_stability"]
     out["rk4_stability"] = md_table(
-        ["dt", "dt x rho(H)", "norm after t = 2"],
         [
-            [sci(r["dt"], 2), num(r["dt_times_rho"], 2), sci(r["final_norm"], 3)]
-            for r in d["rk4_stability"]["runs"]
+            "dt",
+            "dt x rho(H)",
+            "growth per step of the top mode, abs(R(-i dt rho))",
+            f"norm after t = {rk['t_final']:g}",
+        ],
+        [
+            [
+                sci(r["dt"], 3),
+                num(r["dt_times_rho"], 3),
+                num(r["amplification"], 3),
+                sci(r["final_norm"], 3),
+            ]
+            for r in rk["runs"]
         ],
     )
 
     dw = d["double_well_dynamics"]
-    out["double_well_dynamics"] = md_table(
-        ["Quantity", "Value"],
-        [
-            ["splitting E1-E0 from stationary Fourier solver", f"{dw['splitting_stationary']:.6e}"],
+    out["double_well_dynamics"] = (
+        f"Reference E1 - E0 ({dw['reference']}): {dw['splitting_reference']:.9e}\n\n"
+        + md_table(
             [
-                "splitting from time-dependent first minimum (pi / t_min)",
-                f"{dw['splitting_dynamic']:.6e}",
+                "dt",
+                "E1 - E0 from the fit of P(x < 0, t)",
+                "relative difference",
+                "order",
+                "E1 - E0 of the Strang step (eigenphases)",
+                "relative difference",
+                "max abs(norm(t) - norm(0))",
             ],
-            ["relative difference", sci(dw["relative_difference"])],
-            ["max abs(norm - 1) over the run", sci(dw["max_norm_drift"])],
-        ],
+            [
+                [
+                    f"{r['dt']:g}",
+                    f"{r['splitting_fit']:.9e}",
+                    sci(r["relative_difference_fit"]),
+                    num(r["order"]),
+                    f"{r['splitting_propagator']:.9e}",
+                    sci(r["relative_difference_propagator"]),
+                    sci(r["max_norm_drift"]),
+                ]
+                for r in dw["rows"]
+            ],
+        )
     )
 
     sc = d["scattering_2d"]
@@ -251,7 +276,7 @@ def _timedep(d: dict[str, Any], out: dict[str, str]) -> None:
                 sci(sc["relative_l2_difference_half_grid"]),
             ],
             [
-                "max abs(norm - 1): split-step / CN",
+                "max abs(norm(t) - norm(0)): split-step / CN",
                 f"{sci(sc['norm_drift_split_step'])} / {sci(sc['norm_drift_crank_nicolson'])}",
             ],
             ["wall time, split-step (s)", timing(sc["seconds_split_step"], digits=2)],
@@ -289,7 +314,7 @@ def _tunneling(d: dict[str, Any], out: dict[str, str]) -> None:
             "T(mean energy)",
             "T averaged over packet (exact)",
             "T from split-step",
-            "abs difference",
+            "split-step minus averaged exact",
         ],
         [
             [
@@ -298,9 +323,22 @@ def _tunneling(d: dict[str, Any], out: dict[str, str]) -> None:
                 f"{p['analytic_mean_energy']:.5f}",
                 f"{p['analytic_averaged']:.5f}",
                 f"{p['numeric']:.5f}",
-                sci(abs(p["numeric"] - p["analytic_averaged"]), 1),
+                f"{p['numeric'] - p['analytic_averaged']:+.1e}",
             ]
             for p in d["packet"]
+        ],
+    )
+    later = d["packet_later"]
+    out["tunneling_packet_later"] = md_table(
+        ["k0", "box length", "h", *[f"difference at {m} t1" for m in later[0]["multiples"]]],
+        [
+            [
+                num(r["k0"], 2),
+                f"{r['length']:g}",
+                f"{r['h']:g}",
+                *[f"{x:+.1e}" for x in r["difference"]],
+            ]
+            for r in later
         ],
     )
 

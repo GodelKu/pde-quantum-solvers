@@ -338,21 +338,40 @@ def conservation_comparison(
     return rows
 
 
-def rk4_stability_demo(n_points: int = 512, length: float = 30.0, t_final: float = 2.0):
-    """Final norm of RK4 for a stable and an unstable time step (limit ``dt < 2.83 / rho(H)``)."""
+def rk4_amplification(z: float) -> float:
+    """``abs(R(-i z))`` with ``R(w) = 1 + w + w^2/2 + w^3/6 + w^4/24``: RK4 growth per step of an
+    eigenmode of ``H`` with ``dt * lambda = z``.  It exceeds 1 exactly when ``z > 2 sqrt(2)``."""
+    w = -1j * z
+    return float(abs(1 + w + w**2 / 2 + w**3 / 6 + w**4 / 24))
+
+
+def rk4_stability_demo(
+    n_points: int = 512,
+    length: float = 30.0,
+    t_final: float = 20.0,
+    targets: Sequence[float] = (2.0, 2.8, 2.86, 3.5),
+) -> tuple[float, list[dict[str, float]]]:
+    """Final norm of RK4 for time steps with ``dt * rho(H)`` near the limit ``2 sqrt(2) = 2.83``.
+
+    The steps bracket the limit (2.80 stable, 2.86 unstable); round-off seeds the top
+    eigenmode, which then grows by ``rk4_amplification(dt * rho)`` per step.
+    """
     grid, v, x0, p0, omega = _coherent_setup(1, n_points, length)
     psi0 = coherent_state_nd(grid, 0.0, x0, p0, omega)
     solver = RK4(grid, v)
     rho = float(np.max(np.abs(np.linalg.eigvalsh(solver.h_mat.toarray()))))
     rows = []
-    for k in (int(np.ceil(t_final * rho / 2.0)), int(np.floor(t_final * rho / 3.5))):
+    for target in targets:
+        k = round(t_final * rho / target)
         with np.errstate(over="ignore", invalid="ignore"):
             res = solver.propagate(psi0, t_final, k, n_records=4)
         rows.append(
             {
                 "dt": t_final / k,
                 "dt_times_rho": t_final / k * rho,
-                "final_norm": float(res.norms[-1]),
+                "amplification": rk4_amplification(t_final / k * rho),
+                # once the top mode overflows, inf - inf turns the norm into nan
+                "final_norm": float(res.norms[-1]) if np.isfinite(res.norms[-1]) else np.inf,
             }
         )
     return rho, rows

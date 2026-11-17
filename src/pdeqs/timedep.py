@@ -2,8 +2,8 @@
 
 Three propagators share one interface (:class:`TimeDependentSolver`):
 
-* :class:`CrankNicolson` - implicit midpoint rule + 3/5-point finite differences
-  (second order in time and space, exactly unitary),
+* :class:`CrankNicolson` - implicit midpoint rule + finite differences (three-point Laplacian
+  in 1D, five-point in 2D; second order in time and space, exactly unitary),
 * :class:`SplitStepFourier` - Strang splitting ``e^{-iVdt/2} e^{-iTdt} e^{-iVdt/2}`` with FFTs
   (second order in time, spectral in space, exactly unitary),
 * :class:`RK4` - classical Runge-Kutta on the finite-difference Hamiltonian
@@ -91,6 +91,7 @@ class TimeResult:
 
     @property
     def max_norm_drift(self) -> float:
+        """``max_t abs(norm(t) - norm(0))`` over the recorded times."""
         return float(np.max(np.abs(self.norms - self.norms[0])))
 
     @property

@@ -20,6 +20,8 @@ from typing import Any
 import numpy as np
 import scipy
 from scipy.linalg import eig_banded, eigh_tridiagonal
+from scipy.ndimage import gaussian_filter1d
+from scipy.optimize import minimize_scalar
 
 from . import plotting as pl
 from .convergence import (
@@ -54,7 +56,7 @@ from .timedep import (
     gaussian_packet,
 )
 from .timing import REPEATS, repeat_runs, time_stats
-from .tunneling import packet_transmission, transmission_fd
+from .tunneling import packet_transmission, packet_transmission_later, transmission_fd
 
 __all__ = ["environment", "format_study", "generate_report", "md_table", "num", "sci"]
 
@@ -308,8 +310,8 @@ def timedep_section(fig_dir: Path, quick: bool, repeats: int) -> dict[str, Any]:
         2, 5.0, 500 if quick else 1000, repeats=repeats
     )
 
-    rho, stab = rk4_stability_demo()
-    data["rk4_stability"] = {"spectral_radius": rho, "runs": stab}
+    rho, stab = rk4_stability_demo(t_final=20.0)
+    data["rk4_stability"] = {"spectral_radius": rho, "t_final": 20.0, "runs": stab}
 
     # Norm / energy versus time and the cost-vs-error plot (1D, N = 512, L = 30)
     grid = Grid.line(512, 30.0)
@@ -323,7 +325,7 @@ def timedep_section(fig_dir: Path, quick: bool, repeats: int) -> dict[str, Any]:
         res = cls(grid, v).propagate(psi0, 10.0, n_steps)
         axes[0].semilogy(
             res.times,
-            np.maximum(np.abs(res.norms - 1.0), 1e-17),
+            np.maximum(np.abs(res.norms - res.norms[0]), 1e-17),
             label=m,
             color=pl.STYLE[m][0],
             lw=1.5,
@@ -349,7 +351,7 @@ def timedep_section(fig_dir: Path, quick: bool, repeats: int) -> dict[str, Any]:
     data["cost_vs_error_1d"] = cost
     axes[0].set_title(f"Norm drift, N=512, dt={10.0 / n_steps:.0e}")
     axes[0].set_xlabel("t")
-    axes[0].set_ylabel("abs(norm - 1)")
+    axes[0].set_ylabel("abs(norm(t) - norm(0))")
     axes[1].set_title("Relative energy drift")
     axes[1].set_xlabel("t")
     axes[1].set_ylabel("abs(E - E0) / E0")
@@ -365,82 +367,154 @@ def timedep_section(fig_dir: Path, quick: bool, repeats: int) -> dict[str, Any]:
     return data
 
 
-def double_well_dynamics(fig_dir: Path, quick: bool) -> dict[str, float]:
-    """Packet in the left well of the double well; compares the oscillation with E1 - E0."""
+def _left_probability(
+    grid: Grid, v: np.ndarray, psi0: np.ndarray, dt: float, t_end: float, n_frames: int = 0
+) -> tuple[np.ndarray, np.ndarray, float, list[np.ndarray]]:
+    """Split-step run recording ``P(x < 0)`` at every step (and ``n_frames`` density frames)."""
+    (x,) = grid.axes()
+    left = x < 0
+    solver = SplitStepFourier(grid, v)
+    solver.prepare(dt)
+    n_steps = int(t_end / dt)
+    every = max(1, n_steps // n_frames) if n_frames else 0
+    psi = psi0.copy()
+    norm0 = grid.norm(psi)
+    p_left = np.empty(n_steps + 1)
+    frames: list[np.ndarray] = []
+    drift = 0.0
+    for k in range(n_steps + 1):
+        prob = np.abs(psi) ** 2
+        p_left[k] = np.sum(prob[left]) * grid.h[0]
+        if every and k % every == 0:
+            frames.append(prob)
+            drift = max(drift, abs(grid.norm(psi) - norm0))
+        psi = solver.step(psi)
+    drift = max(drift, abs(grid.norm(psi) - norm0))
+    return dt * np.arange(n_steps + 1), p_left, drift, frames
+
+
+def _fit_frequency(
+    t: np.ndarray, y: np.ndarray, guess: float, filter_width: float
+) -> tuple[float, np.ndarray, np.ndarray]:
+    """Frequency of the slow oscillation in ``y(t)``.
+
+    A Gaussian low-pass filter of width ``filter_width`` removes the fast intra-well
+    oscillations; ``a + b cos(w t) + c sin(w t)`` is then fitted by least squares (linear in
+    ``a, b, c``, a 1D minimisation in ``w``) away from the filtered edges.
+    """
+    dt = float(t[1] - t[0])
+    smooth = gaussian_filter1d(y, filter_width / dt, mode="nearest")
+    cut = int(4 * filter_width / dt)
+    tt, yy = t[cut:-cut], smooth[cut:-cut]
+
+    def residual(w: float) -> float:
+        a = np.column_stack([np.ones_like(tt), np.cos(w * tt), np.sin(w * tt)])
+        coef = np.linalg.lstsq(a, yy, rcond=None)[0]
+        return float(np.sum((a @ coef - yy) ** 2))
+
+    w = minimize_scalar(residual, bracket=(0.95 * guess, guess, 1.05 * guess), tol=1e-14).x
+    return float(w), tt, yy
+
+
+def _propagator_splitting(grid: Grid, v: np.ndarray, dt: float, states: np.ndarray) -> float:
+    """``E1 - E0`` of the one-step Strang propagator from its eigenphases (dense, small grids).
+
+    The two eigenvectors with the largest overlap with ``states[:, 0]`` and ``states[:, 1]``
+    are used, so the ``2 pi / dt`` ambiguity of the phases cannot pick a wrong pair.
+    """
+    solver = SplitStepFourier(grid, v)
+    solver.prepare(dt)
+    eye = np.eye(grid.size, dtype=complex)
+    u = np.column_stack([solver.step(eye[:, j]) for j in range(grid.size)])
+    lam, vecs = np.linalg.eig(u)
+    energies = []
+    for k in range(2):
+        j = int(np.argmax(np.abs(vecs.conj().T @ states[:, k])))
+        energies.append(-np.angle(lam[j]) / dt)
+    return float(energies[1] - energies[0])
+
+
+def double_well_dynamics(fig_dir: Path, quick: bool) -> dict[str, Any]:
+    """Tunnel splitting from the dynamics of a Gaussian packet, against the Chebyshev solver.
+
+    The initial state is a Gaussian at the left minimum with the width of the local harmonic
+    ground state, built without any eigensolver.  The slow oscillation of ``P(x < 0)`` is
+    fitted (see :func:`_fit_frequency`), and its frequency is compared with ``E1 - E0`` from the
+    Chebyshev solver, a different basis and method.  For each ``dt`` the splitting of the Strang
+    propagator itself, from the eigenphases of its one-step matrix, is listed as well: the fit
+    should reproduce it, and both should differ from the stationary value by ``O(dt^2)``.
+    """
     dw = DoubleWell()
     n, length = 256, 12.0
     grid = Grid.line(n, length)
     (x,) = grid.axes()
-    ref = SOLVERS["fourier"].solve(dw, -length / 2, length / 2, n, 2)
-    e0, e1 = ref.energies
-    p0, p1 = ref.states[:, 0], ref.states[:, 1]
-    # left-localised combination; sign chosen so that most weight sits at x < 0
-    psi0 = (p0 + p1) / np.sqrt(2.0)
-    if np.sum(psi0[x < 0] ** 2) < np.sum(psi0[x > 0] ** 2):
-        psi0 = (p0 - p1) / np.sqrt(2.0)
-    psi0 = grid.normalize(psi0.astype(complex))
-    solver = SplitStepFourier(grid, dw(x))
-    dt = 0.02
-    t_end = 1.15 * np.pi / (e1 - e0)
-    n_steps = int(t_end / dt)
-    solver.prepare(dt)
-    n_frames = 400
-    every = max(1, n_steps // n_frames)
-    psi = psi0.copy()
-    times, left, dens, norms = [], [], [], []
-    for k in range(n_steps + 1):
-        if k % every == 0:
-            times.append(k * dt)
-            prob = np.abs(psi) ** 2
-            left.append(float(np.sum(prob[x < 0]) * grid.h[0]))
-            dens.append(prob)
-            norms.append(grid.norm(psi))
-        psi = solver.step(psi)
-    times_a, left_a = np.array(times), np.array(left)
-    i = int(np.argmin(left_a))
-    # parabolic refinement of the minimum
-    if 0 < i < len(left_a) - 1:
-        y0, y1, y2 = left_a[i - 1], left_a[i], left_a[i + 1]
-        denom = y0 - 2 * y1 + y2
-        shift = 0.5 * (y0 - y2) / denom if denom != 0 else 0.0
-        t_min = times_a[i] + shift * (times_a[1] - times_a[0])
-    else:
-        t_min = times_a[i]
-    split_dyn = float(np.pi / t_min)
+    v = dw(x)
+    ref = SOLVERS["chebyshev"].solve(dw, -length / 2, length / 2, 200, 2).energies
+    split_ref = float(ref[1] - ref[0])
+    states = SOLVERS["fourier"].solve(dw, -length / 2, length / 2, n, 2).states.astype(complex)
+    omega = np.sqrt(8.0 * dw.lam * dw.a**2)  # V''(-a)
+    psi0 = grid.normalize(np.exp(-0.5 * omega * (x + dw.a) ** 2).astype(complex))
+    filter_width, periods = 15.0, 1.1
+    t_end = periods * 2.0 * np.pi / split_ref
+    rows: list[dict[str, float | None]] = []
+    plot = None
+    for dt in (0.04, 0.02) if quick else (0.04, 0.02, 0.01):
+        t, p_left, drift, frames = _left_probability(
+            grid, v, psi0, dt, t_end, n_frames=400 if dt == 0.02 else 0
+        )
+        w, tt, yy = _fit_frequency(t, p_left, split_ref, filter_width)
+        prop = _propagator_splitting(grid, v, dt, states)
+        rows.append(
+            {
+                "dt": dt,
+                "splitting_fit": w,
+                "relative_difference_fit": (w - split_ref) / split_ref,
+                "splitting_propagator": prop,
+                "relative_difference_propagator": (prop - split_ref) / split_ref,
+                "max_norm_drift": drift,
+            }
+        )
+        if frames:
+            plot = (t, p_left, tt, yy, frames)
+    rel = [(float(r["dt"] or 0.0), float(r["relative_difference_fit"] or 0.0)) for r in rows]
+    rows[0]["order"] = None
+    for i in range(1, len(rows)):
+        (dt_a, a), (dt_b, b) = rel[i - 1], rel[i]
+        rows[i]["order"] = float(np.log(a / b) / np.log(dt_a / dt_b))
+
+    assert plot is not None
+    t, p_left, tt, yy, frames = plot
     fig, axes = pl.new_figure(ncols=2, width=5.8, height=4.2)
     ax = axes[0]
-    ax.imshow(
-        np.array(dens),
-        extent=(x[0], x[-1], times_a[-1], times_a[0]),
-        aspect="auto",
-        cmap="viridis",
-    )
+    ax.imshow(np.array(frames), extent=(x[0], x[-1], t[-1], t[0]), aspect="auto", cmap="viridis")
     ax.set_xlim(-4.5, 4.5)
     ax.set_xlabel("x")
     ax.set_ylabel("t")
-    ax.set_title("Density |psi(x,t)|^2 in the double well")
+    ax.set_title("Density |psi(x,t)|^2, Gaussian start in the left well")
     ax.grid(False)
     ax = axes[1]
-    ax.plot(times_a, left_a, color=pl.STYLE["crank-nicolson"][0], lw=1.6, label="split-step P(x<0)")
+    ax.plot(t, p_left, color=pl.STYLE["crank-nicolson"][0], lw=0.4, alpha=0.6, label="P(x<0)")
+    ax.plot(tt, yy, color=pl.INK, lw=1.4, label=f"low-pass filtered ({filter_width:g} time units)")
     ax.axvline(
-        np.pi / (e1 - e0),
+        np.pi / split_ref,
         color=pl.STYLE["split-step"][0],
         ls="--",
         lw=1.2,
-        label="pi/(E1-E0) from stationary solver",
+        label="pi/(E1-E0) from the Chebyshev solver",
     )
     ax.set_xlabel("t")
     ax.set_ylabel("probability in left well")
-    ax.set_title("Tunnelling oscillation")
-    ax.legend(loc="upper right")
+    ax.set_title("Tunnelling oscillation (split-step, dt = 0.02)")
+    ax.legend(loc="upper center")
     pl.save(fig, fig_dir / "double_well_tunnelling.png")
     return {
-        "splitting_stationary": float(e1 - e0),
-        "splitting_dynamic": split_dyn,
-        "relative_difference": float(abs(split_dyn - (e1 - e0)) / (e1 - e0)),
-        "max_norm_drift": float(np.max(np.abs(np.array(norms) - 1.0))),
-        "dt": dt,
-        "n_steps": float(n_steps),
+        "n": n,
+        "length": length,
+        "reference": "chebyshev, N = 200",
+        "splitting_reference": split_ref,
+        "filter_width": filter_width,
+        "periods": periods,
+        "rows": rows,
     }
 
 
@@ -581,7 +655,7 @@ def tunneling_section(fig_dir: Path, quick: bool, repeats: int) -> dict[str, Any
     ax.set_xlabel("E (V0 = 1, a = 1.55)")
     ax.set_ylabel("transmission T")
     ax.set_title("Rectangular barrier")
-    ax.legend(loc="lower right")
+    ax.legend(loc="upper center")
     ax = axes[1]
     ax.loglog(hs, errs, label="FD scattering, E = 0.72", **pl.style("fd2"))
     h_range = np.array([min(hs), max(hs)])
@@ -607,6 +681,7 @@ def tunneling_section(fig_dir: Path, quick: bool, repeats: int) -> dict[str, Any
         ],
         "fd_fitted_order": float(np.polyfit(np.log(hs), np.log(errs), 1)[0]),
         "packet": [p.__dict__ for p in pk],
+        "packet_later": [packet_transmission_later(k0) for k0 in ([0.6] if quick else [0.6, 1.2])],
     }
 
 

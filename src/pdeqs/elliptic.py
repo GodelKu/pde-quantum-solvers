@@ -3,7 +3,8 @@
 Model problem: ``-Laplacian(u) = f`` on ``(0,1)^2`` with ``u = 0`` on the boundary, discretised by
 the five-point stencil on an ``n x n`` interior grid (``n = 2^k - 1``, ``h = 1/(n+1)``).
 
-Solvers (all written here, using SciPy only for sparse matrices and the direct/ILU baselines):
+Solvers (written here; SciPy supplies sparse matrices, the sparse LU of the ``direct`` baseline,
+and the compiled forward/back substitution that applies the IC(0) factor):
 
 * ``direct``      - sparse LU (SuperLU) baseline,
 * ``cg``          - conjugate gradients,
@@ -74,7 +75,14 @@ def manufactured_problem(n: int) -> tuple[FloatArray, FloatArray]:
 
 
 def ic0_factor(n: int, shift: float = 0.0) -> sp.csc_matrix:
-    """Incomplete Cholesky factor with zero fill, ``A ~ L L^T``, for the five-point matrix."""
+    """Incomplete Cholesky factor with zero fill for the five-point matrix ``shift I - Lap_h``.
+
+    ``L`` has the sparsity pattern of the lower triangle of ``A`` and ``L L^T`` equals ``A`` on
+    that pattern (the dropped fill-in lies outside it).  With row-major ordering only three
+    entries per row are non-zero: the diagonal ``d_i``, the coupling to the left neighbour
+    ``off / d_{i-1}`` and to the neighbour below ``off / d_{i-n}``, so
+    ``d_i^2 = a_ii - (off / d_{i-1})^2 - (off / d_{i-n})^2``.
+    """
     n2 = n * n
     off = -((n + 1) ** 2)
     diag_a = 4.0 * (n + 1) ** 2 + shift
@@ -122,11 +130,18 @@ def conjugate_gradient(
     tol: float = 1e-10,
     maxiter: int = 5000,
 ) -> IterationResult:
-    """Preconditioned CG; stops when ``||r|| / ||b|| < tol`` (true residual recursion)."""
+    """Preconditioned CG from ``x = 0``; stops when ``||r_k|| / ||b|| < tol``.
+
+    ``r_k`` is the recursively updated residual ``r_{k+1} = r_k - alpha A p_k``; the true
+    residual ``b - A x_k`` is not recomputed (the two agree to round-off at these tolerances).
+    A zero right-hand side returns ``x = 0`` after zero iterations.
+    """
     t0 = time.perf_counter()
     x = np.zeros_like(b)
     r = b.copy()
     bnorm = float(np.linalg.norm(b))
+    if bnorm == 0.0:
+        return IterationResult(x, 0, [0.0], True, 0.0, time.perf_counter() - t0)
     z = precond(r) if precond else r
     p = z.copy()
     rz = float(np.vdot(r, z))
@@ -263,7 +278,9 @@ class PoissonSolver:
             self._precond = lambda r: inv_d * r
         elif method == "cg-ic0":
             lower = ic0_factor(n, shift)
-            # forward and back substitution with the factor (no reordering, no pivoting)
+            # SuperLU on a matrix that is already triangular, with natural ordering and no
+            # pivoting, is plain forward/back substitution in compiled code; the test suite
+            # checks it against spsolve_triangular, which is slower here
             solve_l = splu(lower, permc_spec="NATURAL", diag_pivot_thresh=0.0).solve
             solve_lt = splu(lower.T.tocsc(), permc_spec="NATURAL", diag_pivot_thresh=0.0).solve
             self._precond = lambda r: solve_lt(solve_l(r))
@@ -285,7 +302,8 @@ class PoissonSolver:
         if self.method == "direct":
             t1 = time.perf_counter()
             x = self._lu.solve(b)
-            res = float(np.linalg.norm(b - self._matrix @ x) / np.linalg.norm(b))
+            bnorm = float(np.linalg.norm(b))
+            res = float(np.linalg.norm(b - self._matrix @ x)) / bnorm if bnorm > 0.0 else 0.0
             return IterationResult(
                 x.reshape(n, n), 1, [1.0, res], True, self.setup_time, time.perf_counter() - t1
             )
@@ -316,6 +334,8 @@ def _multigrid_iteration(mg: Multigrid, f: FloatArray, tol: float, maxiter: int)
     t0 = time.perf_counter()
     u = np.zeros_like(f)
     bnorm = float(np.linalg.norm(f))
+    if bnorm == 0.0:
+        return IterationResult(u, 0, [0.0], True, 0.0, time.perf_counter() - t0)
     hist = [1.0]
     k = 0
     while hist[-1] >= tol and k < maxiter:

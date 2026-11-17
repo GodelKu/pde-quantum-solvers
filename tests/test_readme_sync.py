@@ -91,3 +91,17 @@ def test_heat_temporal_error_reproduces(results):
     u = heat_solve(u0, t_final, k, "crank-nicolson", "direct").u
     err = float(np.linalg.norm(u - exact) / (n + 1))
     assert err == pytest.approx(he["orders"]["crank-nicolson"]["error"][0], rel=1e-8)
+
+
+def test_strang_propagator_splitting_reproduces(results):
+    from pdeqs.grid import Grid
+    from pdeqs.report import _propagator_splitting
+
+    d = results["timedep"]["double_well_dynamics"]
+    row = d["rows"][0]
+    dw = DoubleWell()
+    grid = Grid.line(d["n"], d["length"])
+    (x,) = grid.axes()
+    states = SOLVERS["fourier"].solve(dw, -d["length"] / 2, d["length"] / 2, d["n"], 2).states
+    split = _propagator_splitting(grid, dw(x), row["dt"], states.astype(complex))
+    assert split == pytest.approx(row["splitting_propagator"], rel=1e-9)

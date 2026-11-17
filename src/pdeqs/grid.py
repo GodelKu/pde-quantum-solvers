@@ -2,7 +2,10 @@
 
 Points are ``x_j = -L/2 + j h`` with ``h = L / n`` (``j = 0 .. n-1``).  The same grid is used
 by finite-difference solvers (implicit zero Dirichlet values outside the box) and by Fourier
-solvers (periodic), so that methods can be compared on identical data.
+solvers (periodic), so that methods can be compared on identical data.  The grid is not
+symmetric about 0: the last point is ``L/2 - h``, so the finite-difference solvers have their
+walls at ``-L/2 - h`` and ``+L/2``.  This is harmless for states that have decayed at both edges,
+which is the case for every problem in this package that uses :class:`Grid`.
 All quantities are in atomic-like units with ``hbar = m = 1``.
 """
 
