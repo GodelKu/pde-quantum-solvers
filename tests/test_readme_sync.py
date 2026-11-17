@@ -17,7 +17,7 @@ from pdeqs.elliptic import heat_exact_semidiscrete, heat_solve, manufactured_pro
 from pdeqs.potentials import DoubleWell, Harmonic, InfiniteWell
 from pdeqs.stationary import SOLVERS
 from pdeqs.tables import load_results, readme_blocks, render_tables, tables_markdown
-from pdeqs.tunneling import transmission_fd
+from pdeqs.tunneling import packet_transmission, transmission_fd
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "docs" / "results" / "results.json"
@@ -73,6 +73,11 @@ def test_tunnelling_transmission_reproduces(results):
     row = next(r for r in tun["fd_convergence"] if r["m"] == 41)
     t = transmission_fd(tun["energy"], 1.0, row["m"], row["h"]).transmission[0]
     assert t == pytest.approx(row["T_fd"], rel=1e-10)
+
+
+def test_wave_packet_transmission_reproduces(results):
+    row = next(p for p in results["tunneling"]["packet"] if p["k0"] == 1.2)
+    assert packet_transmission(row["k0"]).numeric == pytest.approx(row["numeric"], rel=1e-9)
 
 
 def test_poisson_iteration_counts_reproduce(results):
