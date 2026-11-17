@@ -1,5 +1,5 @@
 __pycache__/
-*.pyc
+*.py[cod]
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
@@ -7,36 +7,6 @@ __pycache__/
 build/
 dist/
 .venv/
-
-# ---- never commit: secrets, local config, private or research data
+venv/
 .env
-.env.*
-*.env
-*.key
-*.pem
-*.p12
-id_rsa*
-id_ed25519*
-secrets*/
-*secret*
-*token*
-credentials*
 .forbidden-patterns
-cluster.toml
-!examples/cluster.toml
-private/
-data_private/
-*.local.*
-# VASP inputs/outputs from real calculations
-WAVECAR*
-CHGCAR*
-CHG
-OUTCAR*
-OSZICAR*
-CONTCAR*
-POSCAR_real*
-vasprun.xml
-POTCAR*
-XDATCAR*
-*.tar.gz
-*.tgz

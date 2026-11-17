@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pde-quantum-solvers"
-version = "0.1.0"
+version = "0.2.0"
 description = "From-scratch numerical solvers for the Schrodinger equation and related PDEs, compared on accuracy, conservation and cost."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,7 +25,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "ruff>=0.4", "mypy>=1.5"]
+# exact versions, so that a new ruff release cannot change the formatting check in CI
+dev = ["pytest==9.1.1", "ruff==0.16.9", "mypy==2.3.1"]
+
+[project.urls]
+Repository = "https://github.com/GodelKu/pde-quantum-solvers"
 
 [project.scripts]
 pdeqs = "pdeqs.cli:main"

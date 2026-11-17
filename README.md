@@ -1,14 +1,16 @@
 # pde-quantum-solvers
 
+[![CI](https://github.com/GodelKu/pde-quantum-solvers/actions/workflows/ci.yml/badge.svg)](https://github.com/GodelKu/pde-quantum-solvers/actions/workflows/ci.yml) ![Python 3.10 to 3.13](https://img.shields.io/badge/python-3.10%20to%203.13-blue) ![License MIT](https://img.shields.io/badge/license-MIT-green)
+
 From-scratch numerical solvers for the Schrödinger equation and related PDEs, written to be
 **compared against each other and against exact results**: accuracy, empirical order of
 convergence, conservation of norm and energy, and cost.
 
-Author: Georgii Baiev (physics student, CSUN; minors in Data Science and Mathematics) · 2026 · MIT license
-
-Everything below (every table and every figure) was produced by running the code in this
-repository (`pdeqs report`); nothing is typed in by hand. The numbers refer to the environment
-listed in [Reproducing the results](#reproducing-the-results).
+Every table and figure below was produced by running the code in this repository
+(`pdeqs report`); nothing in them is typed in by hand, and a test checks that the tables match
+the results file. The numbers refer to the environment listed in
+[Reproducing the results](#reproducing-the-results). Version 0.2 fixes the problems found by an
+independent review ([changelog](CHANGELOG.md)).
 
 Units are `hbar = m = 1` throughout.
 
@@ -300,7 +302,7 @@ The fit reproduces the propagator's own splitting, and both differ from the stat
 a relative amount that falls as `dt²`: the remaining difference is the splitting error of the
 Strang scheme, not of the measurement. (Version 0.1 started from the two eigenvectors of the same
 Fourier Hamiltonian and timed the first minimum of `P(x < 0)`; that was a consistency check,
-and its close agreement turned out to be accidental.)
+and its close agreement turned out to be accidental, see the [changelog](CHANGELOG.md).)
 
 #### 2D scattering off a Gaussian bump: split-step versus Crank–Nicolson
 
@@ -479,7 +481,7 @@ size and the machine, so the ranking above is printed from the run, not written 
 ```
 src/pdeqs/
   grid.py         uniform 1D/2D grids
-  potentials.py   harmonic, double well, Morse, rectangular barrier (+ exact T(E))
+  potentials.py   harmonic, double well, Morse, infinite well, linear ramp, barrier (+ exact T(E))
   stationary.py   six eigenvalue solvers behind one interface
   timedep.py      Crank-Nicolson, split-step Fourier, RK4; coherent-state reference solutions
   tunneling.py    FD scattering and wave-packet transmission
@@ -490,28 +492,35 @@ src/pdeqs/
   timing.py       repeated wall-time measurements (median and range)
   plotting.py     matplotlib style
   cli.py          `pdeqs` command
-tests/            pytest suite (test_readme_sync.py: README = rendered JSON)
+tests/            pytest suite (test_readme_sync.py: README = rendered JSON;
+                  test_roadmap.py: known answers of the planned extensions)
 tools/            fill_readme.py
 docs/figures/     PNGs used above      docs/results/  results.json, tables.md
+docs/ROADMAP.md   planned extensions   CHANGELOG.md   what changed after the review
 ```
 
 ## Tests, linting, CI
 
 ```bash
-pytest -q          # unit and convergence tests
+pytest -q          # unit, convergence, README-sync and roadmap tests
 ruff check . && ruff format --check .
-mypy src/pdeqs
+mypy src
 ```
 
 The test suite checks, among other things: CN temporal order 2 (and spatial order 2); split-step
 and CN norm conservation below 1e-10 over 4000 steps in 1D and 400 in 2D; RK4 order 4 and the
-stability limit bracketed at `dt · rho(H)` = 2.80 and 2.86; oscillator and Morse eigenvalues for every solver; the
-order of every Dirichlet solver on the infinite well and on a linear ramp;
+stability limit bracketed at `dt · rho(H)` = 2.80 and 2.86; oscillator and Morse eigenvalues
+for every solver; the order of every Dirichlet solver on the infinite well and on a linear ramp;
 shooting ≡ Numerov on the same grid; analytic limits of `T(E)`; second-order convergence of the
 scattering solver; grid-independent multigrid contraction; CG iteration growth and pinned
 iteration counts; `L Lᵀ = A` on the sparsity pattern for the IC(0) factor, and its application
 as plain triangular substitution; zero right-hand sides; Crank–Nicolson's undershoot on
-discontinuous heat data; and CLI behaviour, including clear errors for invalid arguments. `.github/workflows/ci.yml` runs lint, type check and tests on Python 3.10–3.13.
+discontinuous heat data; that the README tables equal the results file; and CLI behaviour,
+including clear errors for invalid arguments. `tests/test_roadmap.py` holds the known-answer
+tests of the [roadmap](docs/ROADMAP.md), marked as expected failures.
+
+`.github/workflows/ci.yml` runs ruff, mypy and pytest on Linux, macOS and Windows with Python
+3.10 to 3.13; the badge at the top shows its status.
 
 ## Limitations
 
@@ -534,7 +543,7 @@ discontinuous heat data; and CLI behaviour, including clear errors for invalid a
   patch the stiffest modes change sign at every step, so the first step undershoots below zero
   (the test suite asserts this) before the oscillation is damped; the figure at `t = 0.02` is
   past that. Backward Euler stays non-negative. A start with backward-Euler half-steps
-  (Rannacher) would remove the undershoot.
+  (Rannacher) is item 5 of the [roadmap](docs/ROADMAP.md).
 - There is no explicit heat scheme, so the `dt ≤ h²/4` stability limit of forward Euler is not
   demonstrated; the explicit-scheme limit shown is RK4's for the Schrödinger equation.
 - Wall times are medians of repeated runs on one machine and are indicative only; errors,
@@ -559,10 +568,35 @@ Environment of the committed results:
 Python 3.13.17, NumPy 2.5.3, SciPy 1.18.1, Linux
 <!-- END:environment -->
 
-## License
+## Documentation
 
-MIT, see [LICENSE](LICENSE).
+- [CHANGELOG.md](CHANGELOG.md): what the independent review found and what version 0.2 changed.
+- [docs/ROADMAP.md](docs/ROADMAP.md): planned extensions, each with a failing test that defines
+  done.
 
-## Development note
+## How this was built
 
-Developed with AI assistance.
+I chose the problems and the rules for checking the solvers. The first implementation was
+written with an AI coding assistant (Claude). I then had it reviewed by a second model (Claude
+Fable 5.2), which re-ran the report, reproduced the claims with its own scripts and injected bugs
+to see whether the tests catch them. The review found the problems listed in the
+[changelog](CHANGELOG.md): `fd4` was first order at hard walls, the heat-equation benchmark
+refactorised a constant matrix at every step, one validation was not independent, and the
+timings were single runs. Version 0.2 fixes them. The roadmap items are mine to implement.
+
+The rules that keep generated code honest:
+
+* every solver is compared with an exact result (oscillator, Morse, infinite well, Airy levels,
+  rectangular-barrier `T(E)`, coherent states) or with an independent method;
+* orders are measured, not assumed, on refinements where `h` or `dt` halves exactly; temporal
+  errors are measured against the exact propagator of the same spatial operator;
+* the tests are checked by injecting bugs: each injected bug must make at least one test fail;
+* every table in this README is rendered from `docs/results/results.json`, and a test fails if
+  the README and the JSON disagree;
+* wall times are medians of repeated runs, and rankings that depend on them are printed from the
+  run, not written by hand;
+* CI runs lint, type checks and tests on Linux, macOS and Windows, Python 3.10 to 3.13.
+
+Commits made with the assistant carry a `Co-Authored-By` line.
+
+Author: Georgii Baiev, physics student. MIT license, see [LICENSE](LICENSE).
