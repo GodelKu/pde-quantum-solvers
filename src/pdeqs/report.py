@@ -875,29 +875,39 @@ def elliptic_section(fig_dir: Path, quick: bool) -> tuple[dict[str, Any], dict[s
     u_init[n2 // 3 : n2 // 3 + 6, n2 // 2 : n2 // 2 + 9] = 1.0
     inner_rows = []
     sols = {}
+    totals: dict[str, float] = {}
+    n_heat_steps = 20
     for ls in ("direct", "cg", "cg-ic0", "mg-cg"):
         hr = min(
-            (heat_solve(u_init, 0.02, 20, "crank-nicolson", ls, tol=1e-12) for _ in range(3)),
+            (
+                heat_solve(u_init, 0.02, n_heat_steps, "crank-nicolson", ls, tol=1e-12)
+                for _ in range(3)
+            ),
             key=lambda q: q.wall_time,
         )
         sols[ls] = hr.u
+        totals[ls] = hr.wall_time
+        per_step = hr.total_inner_iterations / n_heat_steps
         inner_rows.append(
             [
                 ls,
-                "1 solve per step" if ls == "direct" else str(hr.total_inner_iterations),
+                "1 LU solve" if ls == "direct" else num(per_step, 1),
+                f"{hr.setup_time:.3f}",
                 f"{hr.wall_time:.3f}",
                 sci(float(np.max(np.abs(hr.u - sols["direct"])))),
             ]
         )
+    ranking = ", ".join(sorted(totals, key=lambda k: totals[k]))
     heat_solver_table = md_table(
         [
             "Linear solver",
-            "inner iterations (20 steps)",
-            "wall time (s)",
+            "iterations per step",
+            "one-time setup (s)",
+            f"total, {n_heat_steps} steps incl. setup (s)",
             "max difference to direct",
         ],
         inner_rows,
-    )
+    ) + (f"\n\nFastest to slowest in this run: {ranking}.")
     u_final = sols["mg-cg"]
     ax = axes[1]
     ax.imshow(u_final.T, origin="lower", extent=(0, 1, 0, 1), cmap="viridis")

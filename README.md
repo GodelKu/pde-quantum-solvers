@@ -79,11 +79,11 @@ well. "Time" is the wall time of one solve at the largest N in the row.
 | Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
 |---|---|---|---|---|---|---|
 | fd2 | 2 | 2.01 | 2.00 | 1.24e-01 (N=40) | 1.22e-04 (N=1280) | 2.2 |
-| fd4 | 4 | 3.98 | 4.00 | 1.41e-02 (N=40) | 1.60e-08 (N=1280) | 402.8 |
-| numerov | 4 | 4.01 | 4.00 | 5.98e-03 (N=40) | 5.99e-09 (N=1280) | 493.9 |
-| fourier | spectral | - | - | 1.00e-01 (N=16) | 2.66e-14 (N=96) | 0.7 |
+| fd4 | 4 | 3.98 | 4.00 | 1.41e-02 (N=40) | 1.60e-08 (N=1280) | 384.6 |
+| numerov | 4 | 4.01 | 4.00 | 5.98e-03 (N=40) | 5.99e-09 (N=1280) | 473.5 |
+| fourier | spectral | - | - | 1.00e-01 (N=16) | 2.66e-14 (N=96) | 0.6 |
 | chebyshev | spectral | - | - | 6.47e-01 (N=16) | 2.49e-14 (N=96) | 3.2 |
-| shooting | 4 | 4.00 | 4.00 | 9.90e-06 (N=200) | 2.45e-09 (N=1600) | 466.7 |
+| shooting | 4 | 4.00 | 4.00 | 9.90e-06 (N=200) | 2.45e-09 (N=1600) | 373.3 |
 <!-- END:stationary_harmonic -->
 
 **Double well** (`V = 0.25 (x² − 4)²`)
@@ -91,12 +91,12 @@ well. "Time" is the wall time of one solve at the largest N in the row.
 <!-- BEGIN:stationary_double_well -->
 | Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.01 | 2.00 | 8.07e-02 (N=40) | 8.06e-05 (N=1280) | 2.3 |
-| fd4 | 4 | 3.98 | 4.00 | 7.32e-03 (N=40) | 8.30e-09 (N=1280) | 414.4 |
-| numerov | 4 | 4.01 | 4.00 | 3.10e-03 (N=40) | 3.11e-09 (N=1280) | 496.8 |
-| fourier | spectral | - | - | 1.41e-01 (N=16) | 5.42e-13 (N=96) | 0.7 |
-| chebyshev | spectral | - | - | 4.16e-01 (N=16) | 4.81e-13 (N=96) | 3.4 |
-| shooting | 4 | 4.00 | 4.00 | 5.14e-06 (N=200) | 1.28e-09 (N=1600) | 410.8 |
+| fd2 | 2 | 2.01 | 2.00 | 8.07e-02 (N=40) | 8.06e-05 (N=1280) | 2.0 |
+| fd4 | 4 | 3.98 | 4.00 | 7.32e-03 (N=40) | 8.30e-09 (N=1280) | 398.0 |
+| numerov | 4 | 4.01 | 4.00 | 3.10e-03 (N=40) | 3.11e-09 (N=1280) | 442.1 |
+| fourier | spectral | - | - | 1.41e-01 (N=16) | 5.42e-13 (N=96) | 0.6 |
+| chebyshev | spectral | - | - | 4.16e-01 (N=16) | 4.81e-13 (N=96) | 3.3 |
+| shooting | 4 | 4.00 | 4.00 | 5.14e-06 (N=200) | 1.28e-09 (N=1600) | 381.4 |
 <!-- END:stationary_double_well -->
 
 **Morse potential** (`D = 12`, `α = 1`, five bound states, four compared)
@@ -104,12 +104,12 @@ well. "Time" is the wall time of one solve at the largest N in the row.
 <!-- BEGIN:stationary_morse -->
 | Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.03 | 2.00 | 8.57e-01 (N=40) | 7.83e-04 (N=1280) | 2.2 |
-| fd4 | 4 | 3.87 | 4.00 | 2.53e-01 (N=40) | 4.59e-07 (N=1280) | 411.3 |
-| numerov | 4 | 3.94 | 4.00 | 1.15e-01 (N=40) | 1.72e-07 (N=1280) | 471.9 |
+| fd2 | 2 | 2.03 | 2.00 | 8.57e-01 (N=40) | 7.83e-04 (N=1280) | 2.1 |
+| fd4 | 4 | 3.87 | 4.00 | 2.53e-01 (N=40) | 4.59e-07 (N=1280) | 360.7 |
+| numerov | 4 | 3.94 | 4.00 | 1.15e-01 (N=40) | 1.72e-07 (N=1280) | 518.3 |
 | fourier | spectral | - | - | 2.93e+00 (N=16) | 3.95e-10 (N=96) | 0.6 |
-| chebyshev | spectral | - | - | 1.02e+00 (N=16) | 5.51e-14 (N=96) | 3.1 |
-| shooting | 4 | 4.00 | 4.00 | 2.87e-04 (N=200) | 7.06e-08 (N=1600) | 384.5 |
+| chebyshev | spectral | - | - | 1.02e+00 (N=16) | 5.51e-14 (N=96) | 3.0 |
+| shooting | 4 | 4.00 | 4.00 | 2.87e-04 (N=200) | 7.06e-08 (N=1600) | 383.6 |
 <!-- END:stationary_morse -->
 
 **Hard walls**: infinite well on `[0, 1]` and linear ramp `V = x` on `[0, 30]`, both with exact
@@ -207,9 +207,9 @@ Same grid and time step for all methods (1D: N = 512, L = 30, `t = 10`; 2D: 96 �
 <!-- BEGIN:conservation_1d -->
 | Method | dt | max abs(norm - 1) | max rel. energy drift | L2 error vs analytic | Time (s) |
 |---|---|---|---|---|---|
-| crank-nicolson | 2.0e-03 | 1.33e-14 | 2.74e-14 | 1.43e-02 | 0.120 |
-| split-step | 2.0e-03 | 4.06e-13 | 6.43e-07 | 3.02e-06 | 0.142 |
-| rk4 | 2.0e-03 | 1.91e-12 | 1.08e-11 | 1.42e-02 | 0.235 |
+| crank-nicolson | 2.0e-03 | 1.33e-14 | 2.74e-14 | 1.43e-02 | 0.133 |
+| split-step | 2.0e-03 | 4.06e-13 | 6.43e-07 | 3.02e-06 | 0.168 |
+| rk4 | 2.0e-03 | 1.91e-12 | 1.08e-11 | 1.42e-02 | 0.231 |
 <!-- END:conservation_1d -->
 
 2D:
@@ -217,9 +217,9 @@ Same grid and time step for all methods (1D: N = 512, L = 30, `t = 10`; 2D: 96 �
 <!-- BEGIN:conservation_2d -->
 | Method | dt | max abs(norm - 1) | max rel. energy drift | L2 error vs analytic | Time (s) |
 |---|---|---|---|---|---|
-| crank-nicolson | 5.0e-03 | 5.33e-15 | 1.01e-14 | 1.05e-01 | 1.911 |
-| split-step | 5.0e-03 | 2.84e-13 | 4.23e-06 | 2.75e-05 | 0.228 |
-| rk4 | 5.0e-03 | 1.90e-09 | 8.09e-09 | 1.03e-01 | 0.611 |
+| crank-nicolson | 5.0e-03 | 5.33e-15 | 1.01e-14 | 1.05e-01 | 1.713 |
+| split-step | 5.0e-03 | 2.84e-13 | 4.23e-06 | 2.75e-05 | 0.195 |
+| rk4 | 5.0e-03 | 1.90e-09 | 8.09e-09 | 1.03e-01 | 0.553 |
 <!-- END:conservation_2d -->
 
 ![Norm drift, energy drift and cost versus accuracy](docs/figures/conservation.png)
@@ -269,7 +269,7 @@ the *stationary* Fourier solver:
 | relative L2 difference of the two wave functions | 1.18e-01 |
 | same difference with the grid spacing doubled (half as many points) | 4.41e-01 |
 | max abs(norm - 1): split-step / CN | 2.71e-14 / 2.22e-16 |
-| wall time: split-step / CN (s) | 0.16 / 1.54 |
+| wall time: split-step / CN (s) | 0.14 / 1.36 |
 <!-- END:scattering_2d -->
 
 Both propagators are unitary, but the two wave functions differ noticeably. The difference
@@ -328,12 +328,12 @@ included in the time.
 <!-- BEGIN:poisson_iterations -->
 | Solver | n = 31 | n = 63 | n = 127 | n = 255 |
 |---|---|---|---|---|
-| direct | 0.003 s (direct) | 0.010 s (direct) | 0.048 s (direct) | 0.299 s (direct) |
-| cg | 106 it / 0.002 s | 215 it / 0.010 s | 434 it / 0.060 s | 874 it / 0.448 s |
-| cg-jacobi | 106 it / 0.003 s | 215 it / 0.011 s | 434 it / 0.060 s | 874 it / 0.499 s |
-| cg-ic0 | 35 it / 0.003 s | 67 it / 0.016 s | 132 it / 0.103 s | 263 it / 0.741 s |
-| mg | 13 it / 0.007 s | 13 it / 0.012 s | 14 it / 0.023 s | 14 it / 0.070 s |
-| mg-cg | 8 it / 0.006 s | 8 it / 0.009 s | 8 it / 0.017 s | 8 it / 0.046 s |
+| direct | 0.003 s (direct) | 0.009 s (direct) | 0.042 s (direct) | 0.286 s (direct) |
+| cg | 106 it / 0.002 s | 215 it / 0.009 s | 434 it / 0.056 s | 874 it / 0.440 s |
+| cg-jacobi | 106 it / 0.002 s | 215 it / 0.010 s | 434 it / 0.056 s | 874 it / 0.498 s |
+| cg-ic0 | 35 it / 0.003 s | 67 it / 0.016 s | 132 it / 0.099 s | 263 it / 0.747 s |
+| mg | 13 it / 0.007 s | 13 it / 0.011 s | 14 it / 0.022 s | 14 it / 0.069 s |
+| mg-cg | 8 it / 0.005 s | 8 it / 0.008 s | 8 it / 0.015 s | 8 it / 0.045 s |
 <!-- END:poisson_iterations -->
 
 Discretisation error of the 5-point scheme (direct solve):
@@ -371,20 +371,28 @@ semi-discrete solution is known and only the temporal error is measured.
 | crank-nicolson | 3.57e-04 | 9.02e-05 | 2.26e-05 | 5.66e-06 | 2.00 |
 <!-- END:heat_orders -->
 
-Linear solvers inside the Crank–Nicolson time loop (63 × 63 grid, 20 steps, tolerance 1e-12):
+Linear solvers inside the Crank–Nicolson time loop (63 × 63 grid, 20 steps, tolerance 1e-12).
+The matrix `I/(θ dt) − Δ_h` is the same at every step, so each solver is set up once (sparse LU
+factors, IC(0) factor or multigrid hierarchy) and reused for all right-hand sides; the total
+includes that setup:
 
 <!-- BEGIN:heat_solvers -->
-| Linear solver | inner iterations (20 steps) | wall time (s) | max difference to direct |
-|---|---|---|---|
-| direct | 1 solve per step | 0.195 | 0.00e+00 |
-| cg | 973 | 0.049 | 1.89e-13 |
-| cg-ic0 | 338 | 0.155 | 1.29e-13 |
-| mg-cg | 160 | 0.152 | 5.57e-14 |
+| Linear solver | iterations per step | one-time setup (s) | total, 20 steps incl. setup (s) | max difference to direct |
+|---|---|---|---|---|
+| direct | 1 LU solve | 0.009 | 0.018 | 0.00e+00 |
+| cg | 48.6 | 0.000 | 0.046 | 1.89e-13 |
+| cg-ic0 | 16.9 | 0.005 | 0.064 | 1.29e-13 |
+| mg-cg | 8.0 | 0.001 | 0.139 | 5.57e-14 |
+
+Fastest to slowest in this run: direct, cg, cg-ic0, mg-cg.
 <!-- END:heat_solvers -->
 
-The shifted operator `1/(θ dt) I − Δ_h` is much better conditioned than the pure Laplacian, so
-plain CG needs only about 49 iterations per step here and is the fastest in wall-clock; multigrid
-reduces the iteration count further but does not pay off at this size.
+After the one-time factorisation, a direct step is one forward and one back substitution with
+the sparse LU factors. A CG iteration costs one matrix-vector product, plus two triangular solves
+with IC(0) or one V-cycle with multigrid. The shifted operator is much better conditioned than
+the pure Laplacian, so even plain CG needs few iterations per step; the preconditioners reduce
+the count further, but each of their iterations costs more. Which option wins depends on the grid
+size and the machine, so the ranking above is printed from the run, not written by hand.
 
 ![Heat equation: temporal convergence and a diffusing patch](docs/figures/heat_equation.png)
 

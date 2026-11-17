@@ -239,64 +239,77 @@ class Multigrid:
 POISSON_SOLVERS = ("direct", "cg", "cg-jacobi", "cg-ic0", "mg", "mg-cg")
 
 
+class PoissonSolver:
+    """Solver for ``(shift I - Laplacian_h) u = f`` on an ``n x n`` grid, set up once.
+
+    Everything that depends only on the matrix (sparse LU factors, the IC(0) factor, the
+    multigrid hierarchy) is built in the constructor and timed as ``setup_time``; :meth:`solve`
+    then does only the work for one right-hand side.  Time-stepping loops, where the matrix is
+    the same at every step, build one solver and call :meth:`solve` repeatedly.
+    """
+
+    def __init__(self, n: int, method: str = "mg-cg", shift: float = 0.0) -> None:
+        if method not in POISSON_SOLVERS:
+            raise ValueError(f"unknown method {method!r}; choose from {POISSON_SOLVERS}")
+        t0 = time.perf_counter()
+        self.n, self.method, self.shift = n, method, shift
+        self.mg: Multigrid | None = None
+        self._precond: Callable[[FloatArray], FloatArray] | None = None
+        if method == "direct":
+            self._matrix = poisson_matrix(n, shift).tocsc()
+            self._lu = splu(self._matrix)
+        elif method == "cg-jacobi":
+            inv_d = 1.0 / (4.0 * (n + 1) ** 2 + shift)
+            self._precond = lambda r: inv_d * r
+        elif method == "cg-ic0":
+            lower = ic0_factor(n, shift)
+            # forward and back substitution with the factor (no reordering, no pivoting)
+            solve_l = splu(lower, permc_spec="NATURAL", diag_pivot_thresh=0.0).solve
+            solve_lt = splu(lower.T.tocsc(), permc_spec="NATURAL", diag_pivot_thresh=0.0).solve
+            self._precond = lambda r: solve_lt(solve_l(r))
+        elif method in ("mg", "mg-cg"):
+            mg = Multigrid(n, shift)
+            self.mg = mg
+            if method == "mg-cg":
+                self._precond = lambda r: mg.precondition(r.reshape(n, n)).ravel()
+        self.setup_time = time.perf_counter() - t0
+
+    def _matvec(self, v: FloatArray) -> FloatArray:
+        return apply_operator(v.reshape(self.n, self.n), self.shift).ravel()
+
+    def solve(self, f: FloatArray, tol: float = 1e-10, maxiter: int = 5000) -> IterationResult:
+        n = self.n
+        if f.shape != (n, n):
+            raise ValueError(f"right-hand side has shape {f.shape}, solver expects {(n, n)}")
+        b = f.ravel().astype(float)
+        if self.method == "direct":
+            t1 = time.perf_counter()
+            x = self._lu.solve(b)
+            res = float(np.linalg.norm(b - self._matrix @ x) / np.linalg.norm(b))
+            return IterationResult(
+                x.reshape(n, n), 1, [1.0, res], True, self.setup_time, time.perf_counter() - t1
+            )
+        if self.method == "mg":
+            assert self.mg is not None
+            out = _multigrid_iteration(self.mg, f, tol, maxiter)
+        else:
+            out = conjugate_gradient(self._matvec, b, self._precond, tol, maxiter)
+            out.x = out.x.reshape(n, n)
+        if self.mg is not None:
+            out.extra["levels"] = float(len(self.mg.levels))
+        out.setup_time = self.setup_time
+        return out
+
+
 def solve_poisson(
     f: FloatArray,
     method: str = "mg-cg",
     shift: float = 0.0,
     tol: float = 1e-10,
     maxiter: int = 5000,
-    mg: Multigrid | None = None,
 ) -> IterationResult:
-    """Solve ``(shift I - Laplacian_h) u = f`` with the selected method."""
-    n = f.shape[0]
-    b = f.ravel().astype(float)
-    t0 = time.perf_counter()
-    if method == "direct":
-        a = poisson_matrix(n, shift).tocsc()
-        lu = splu(a)
-        setup = time.perf_counter() - t0
-        t1 = time.perf_counter()
-        x = lu.solve(b)
-        res = float(np.linalg.norm(b - a @ x) / np.linalg.norm(b))
-        return IterationResult(
-            x.reshape(n, n), 1, [1.0, res], True, setup, time.perf_counter() - t1
-        )
-
-    def mv(v: FloatArray) -> FloatArray:
-        return apply_operator(v.reshape(n, n), shift).ravel()
-
-    if method == "cg":
-        out = conjugate_gradient(mv, b, None, tol, maxiter)
-    elif method == "cg-jacobi":
-        inv_d = 1.0 / (4.0 * (n + 1) ** 2 + shift)
-        setup = time.perf_counter() - t0
-        out = conjugate_gradient(mv, b, lambda r: inv_d * r, tol, maxiter)
-        out.setup_time = setup
-    elif method == "cg-ic0":
-        lower = ic0_factor(n, shift)
-        solve_l = splu(lower, permc_spec="NATURAL", diag_pivot_thresh=0.0).solve
-        solve_lt = splu(lower.T.tocsc(), permc_spec="NATURAL", diag_pivot_thresh=0.0).solve
-        setup = time.perf_counter() - t0
-        out = conjugate_gradient(mv, b, lambda r: solve_lt(solve_l(r)), tol, maxiter)
-        out.setup_time = setup
-    elif method in ("mg", "mg-cg"):
-        mg = mg or Multigrid(n, shift)
-        setup = time.perf_counter() - t0
-        if method == "mg-cg":
-
-            def pc(r: FloatArray) -> FloatArray:
-                return mg.precondition(r.reshape(n, n)).ravel()
-
-            out = conjugate_gradient(mv, b, pc, tol, maxiter)
-        else:
-            out = _multigrid_iteration(mg, f, tol, maxiter)
-        out.setup_time = setup
-        out.extra["levels"] = float(len(mg.levels))
-    else:
-        raise ValueError(f"unknown method {method!r}; choose from {POISSON_SOLVERS}")
-    if method in ("cg", "cg-jacobi", "cg-ic0", "mg-cg"):
-        out.x = out.x.reshape(n, n)
-    return out
+    """Solve ``(shift I - Laplacian_h) u = f`` once with the selected method (setup included)."""
+    return PoissonSolver(f.shape[0], method, shift).solve(f, tol, maxiter)
 
 
 def _multigrid_iteration(mg: Multigrid, f: FloatArray, tol: float, maxiter: int) -> IterationResult:
@@ -329,7 +342,8 @@ class HeatResult:
     steps: int
     dt: float
     total_inner_iterations: int
-    wall_time: float
+    wall_time: float  # whole run, including the one-time setup of the linear solver
+    setup_time: float = 0.0
 
 
 def heat_solve(
@@ -343,23 +357,25 @@ def heat_solve(
     """March ``u_t = Laplacian(u)`` with homogeneous Dirichlet data.
 
     ``scheme`` is ``"backward-euler"`` (order 1) or ``"crank-nicolson"`` (order 2); each step
-    solves ``(I/(theta dt) - Laplacian_h) u_new = rhs`` with the chosen linear solver.
+    solves ``(I/(theta dt) - Laplacian_h) u_new = rhs`` with the chosen linear solver.  The
+    matrix is the same at every step, so the solver is set up once (LU or IC(0) factors,
+    multigrid hierarchy) and reused; ``wall_time`` includes that setup.
     """
     n = u0.shape[0]
     dt = t_final / n_steps
     theta = {"backward-euler": 1.0, "crank-nicolson": 0.5}[scheme]
     shift = 1.0 / (theta * dt)
-    mg = Multigrid(n, shift) if linear_solver in ("mg", "mg-cg") else None
     t0 = time.perf_counter()
-    u = u0.copy()
+    solver = PoissonSolver(n, linear_solver, shift)
+    u: np.ndarray = u0.copy()
     inner = 0
     for _ in range(n_steps):
         # (I - theta dt L) u_new = (I + (1-theta) dt L) u, with L = Laplacian_h = -A_0
         rhs = u - (1.0 - theta) * dt * apply_operator(u)
-        sol = solve_poisson(rhs * shift, linear_solver, shift=shift, tol=tol, mg=mg)
+        sol = solver.solve(rhs * shift, tol=tol)
         u = sol.x
         inner += sol.iterations
-    return HeatResult(u, n_steps, dt, inner, time.perf_counter() - t0)
+    return HeatResult(u, n_steps, dt, inner, time.perf_counter() - t0, solver.setup_time)
 
 
 def heat_exact_semidiscrete(
@@ -379,6 +395,7 @@ __all__ = [
     "HeatResult",
     "IterationResult",
     "Multigrid",
+    "PoissonSolver",
     "apply_operator",
     "conjugate_gradient",
     "heat_exact_semidiscrete",

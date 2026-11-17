@@ -3,6 +3,7 @@ import pytest
 
 from pdeqs.elliptic import (
     Multigrid,
+    PoissonSolver,
     apply_operator,
     conjugate_gradient,
     heat_exact_semidiscrete,
@@ -135,3 +136,32 @@ def test_heat_linear_solvers_agree_and_decay_is_monotone():
     assert np.max(np.abs(sols["cg"] - sols["direct"])) < 1e-10
     assert np.max(np.abs(sols["mg-cg"] - sols["direct"])) < 1e-10
     assert np.linalg.norm(sols["direct"]) < np.linalg.norm(u0)
+
+
+def test_heat_solve_sets_up_the_linear_solver_once(monkeypatch):
+    """The step matrix is constant: one LU (or one pair of IC(0) triangular factors) per run."""
+    import pdeqs.elliptic as el
+
+    calls: list[int] = []
+    real_splu = el.splu
+
+    def counting_splu(*args, **kwargs):
+        calls.append(1)
+        return real_splu(*args, **kwargs)
+
+    monkeypatch.setattr(el, "splu", counting_splu)
+    u0, _ = heat_exact_semidiscrete(15, (1, 1), 0.0)
+    heat_solve(u0, 0.01, 10, "crank-nicolson", "direct")
+    assert len(calls) == 1
+    calls.clear()
+    heat_solve(u0, 0.01, 10, "crank-nicolson", "cg-ic0")
+    assert len(calls) == 2  # L and L^T, factored once each
+
+
+def test_prepared_solver_matches_one_shot_solve():
+    f, _ = manufactured_problem(31)
+    for method in ("direct", "cg-ic0", "mg-cg"):
+        solver = PoissonSolver(31, method, shift=50.0)
+        a = solver.solve(f, tol=1e-12).x
+        b = solve_poisson(f, method, shift=50.0, tol=1e-12).x
+        assert np.array_equal(a, b), method
