@@ -10,6 +10,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any, TypeAlias
 
 import numpy as np
@@ -25,6 +26,7 @@ from .timedep import (
     coherent_state_nd,
     exact_semidiscrete,
 )
+from .timing import repeat_runs, time_stats
 
 FloatArray: TypeAlias = NDArray[np.floating[Any]]
 
@@ -297,9 +299,17 @@ def spatial_study(
 
 
 def conservation_comparison(
-    dim: int = 1, t_final: float = 10.0, n_steps: int = 5000, n_points: int | None = None
+    dim: int = 1,
+    t_final: float = 10.0,
+    n_steps: int = 5000,
+    n_points: int | None = None,
+    repeats: int = 1,
 ) -> list[dict[str, Any]]:
-    """Run all propagators with the same ``dt`` on the harmonic coherent-state problem."""
+    """Run all propagators with the same ``dt`` on the harmonic coherent-state problem.
+
+    ``seconds`` is the wall time of one propagation (setup plus time stepping); with
+    ``repeats > 1`` it holds the median and range of that many runs after a warm-up run.
+    """
     if dim == 1:
         n, length = (n_points or 512), 30.0
     else:
@@ -310,7 +320,10 @@ def conservation_comparison(
     rows: list[dict[str, Any]] = []
     for name, cls in TIME_SOLVERS.items():
         solver: TimeDependentSolver = cls(grid, v)
-        res = solver.propagate(psi0, t_final, n_steps)
+        runs = repeat_runs(
+            partial(solver.propagate, psi0, t_final, n_steps), repeats, warmup=repeats > 1
+        )
+        res = runs[-1]
         rows.append(
             {
                 "method": name,
@@ -319,8 +332,7 @@ def conservation_comparison(
                 "max_energy_drift": res.max_energy_drift,
                 "relative_energy_drift": res.max_energy_drift / abs(res.energies[0]),
                 "l2_error_vs_analytic": grid.norm(res.psi - exact),
-                "seconds": res.wall_time,
-                "setup_seconds": res.setup_time,
+                "seconds": time_stats([r.wall_time + r.setup_time for r in runs]),
             }
         )
     return rows

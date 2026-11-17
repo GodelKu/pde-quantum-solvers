@@ -65,6 +65,14 @@ How errors are measured: *observed order* between two refinements is
 slope of `log e` against `log s` over points above a 1e-11 round-off floor. For spectral
 methods no algebraic order exists, so none is reported.
 
+Errors, orders and iteration counts are deterministic.
+
+<!-- BEGIN:timing_note -->
+Wall times are the median of 5 runs after one warm-up run, with the fastest and slowest of those runs in brackets.
+<!-- END:timing_note -->
+
+Wall times depend on the machine; compare them only within one table.
+
 ### 1. Stationary states
 
 ![Eigenvalue convergence of the six stationary solvers for three potentials](docs/figures/stationary_convergence.png)
@@ -76,54 +84,76 @@ well. "Time" is the wall time of one solve at the largest N in the row.
 **Harmonic oscillator**
 
 <!-- BEGIN:stationary_harmonic -->
-| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
+| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.01 | 2.00 | 1.24e-01 (N=40) | 1.22e-04 (N=1280) | 2.2 |
-| fd4 | 4 | 3.98 | 4.00 | 1.41e-02 (N=40) | 1.60e-08 (N=1280) | 384.6 |
-| numerov | 4 | 4.01 | 4.00 | 5.98e-03 (N=40) | 5.99e-09 (N=1280) | 473.5 |
-| fourier | spectral | - | - | 1.00e-01 (N=16) | 2.66e-14 (N=96) | 0.6 |
-| chebyshev | spectral | - | - | 6.47e-01 (N=16) | 2.49e-14 (N=96) | 3.2 |
-| shooting | 4 | 4.00 | 4.00 | 9.90e-06 (N=200) | 2.45e-09 (N=1600) | 373.3 |
+| fd2 | 2 | 2.01 | 2.00 | 1.24e-01 (N=40) | 1.22e-04 (N=1280) | 2.0 (2.0-2.1) |
+| fd4 | 4 | 3.98 | 4.00 | 1.41e-02 (N=40) | 1.60e-08 (N=1280) | 335.5 (331.2-344.8) |
+| numerov | 4 | 4.01 | 4.00 | 5.98e-03 (N=40) | 5.99e-09 (N=1280) | 428.4 (414.8-429.1) |
+| fourier | spectral | - | - | 1.00e-01 (N=16) | 2.66e-14 (N=96) | 0.6 (0.6-0.6) |
+| chebyshev | spectral | - | - | 6.47e-01 (N=16) | 2.49e-14 (N=96) | 3.2 (3.0-3.5) |
+| shooting | 4 | 4.00 | 4.00 | 9.90e-06 (N=200) | 2.45e-09 (N=1600) | 369.6 (350.5-372.3) |
 <!-- END:stationary_harmonic -->
 
 **Double well** (`V = 0.25 (x² − 4)²`)
 
 <!-- BEGIN:stationary_double_well -->
-| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
+| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.01 | 2.00 | 8.07e-02 (N=40) | 8.06e-05 (N=1280) | 2.0 |
-| fd4 | 4 | 3.98 | 4.00 | 7.32e-03 (N=40) | 8.30e-09 (N=1280) | 398.0 |
-| numerov | 4 | 4.01 | 4.00 | 3.10e-03 (N=40) | 3.11e-09 (N=1280) | 442.1 |
-| fourier | spectral | - | - | 1.41e-01 (N=16) | 5.42e-13 (N=96) | 0.6 |
-| chebyshev | spectral | - | - | 4.16e-01 (N=16) | 4.81e-13 (N=96) | 3.3 |
-| shooting | 4 | 4.00 | 4.00 | 5.14e-06 (N=200) | 1.28e-09 (N=1600) | 381.4 |
+| fd2 | 2 | 2.01 | 2.00 | 8.07e-02 (N=40) | 8.06e-05 (N=1280) | 1.8 (1.8-1.9) |
+| fd4 | 4 | 3.98 | 4.00 | 7.32e-03 (N=40) | 8.30e-09 (N=1280) | 343.9 (337.1-356.2) |
+| numerov | 4 | 4.01 | 4.00 | 3.10e-03 (N=40) | 3.11e-09 (N=1280) | 424.8 (418.6-427.7) |
+| fourier | spectral | - | - | 1.41e-01 (N=16) | 5.42e-13 (N=96) | 0.6 (0.5-0.6) |
+| chebyshev | spectral | - | - | 4.16e-01 (N=16) | 4.81e-13 (N=96) | 3.2 (3.2-3.5) |
+| shooting | 4 | 4.00 | 4.00 | 5.14e-06 (N=200) | 1.28e-09 (N=1600) | 358.2 (351.8-367.0) |
 <!-- END:stationary_double_well -->
 
 **Morse potential** (`D = 12`, `α = 1`, five bound states, four compared)
 
 <!-- BEGIN:stationary_morse -->
-| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
+| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.03 | 2.00 | 8.57e-01 (N=40) | 7.83e-04 (N=1280) | 2.1 |
-| fd4 | 4 | 3.87 | 4.00 | 2.53e-01 (N=40) | 4.59e-07 (N=1280) | 360.7 |
-| numerov | 4 | 3.94 | 4.00 | 1.15e-01 (N=40) | 1.72e-07 (N=1280) | 518.3 |
-| fourier | spectral | - | - | 2.93e+00 (N=16) | 3.95e-10 (N=96) | 0.6 |
-| chebyshev | spectral | - | - | 1.02e+00 (N=16) | 5.51e-14 (N=96) | 3.0 |
-| shooting | 4 | 4.00 | 4.00 | 2.87e-04 (N=200) | 7.06e-08 (N=1600) | 383.6 |
+| fd2 | 2 | 2.03 | 2.00 | 8.57e-01 (N=40) | 7.83e-04 (N=1280) | 2.0 (2.0-2.1) |
+| fd4 | 4 | 3.87 | 4.00 | 2.53e-01 (N=40) | 4.59e-07 (N=1280) | 343.0 (335.0-372.9) |
+| numerov | 4 | 3.94 | 4.00 | 1.15e-01 (N=40) | 1.72e-07 (N=1280) | 434.0 (428.4-459.9) |
+| fourier | spectral | - | - | 2.93e+00 (N=16) | 3.95e-10 (N=96) | 0.6 (0.6-0.6) |
+| chebyshev | spectral | - | - | 1.02e+00 (N=16) | 5.51e-14 (N=96) | 2.9 (2.9-3.1) |
+| shooting | 4 | 4.00 | 4.00 | 2.87e-04 (N=200) | 7.06e-08 (N=1600) | 364.7 (352.6-384.2) |
 <!-- END:stationary_morse -->
+
+**Cost of `fd4`.** Both finite-difference matrices are banded, yet `fd4` is far slower than
+`fd2` at large N in the tables above. The time goes into the eigenvectors, not the method:
+`scipy.linalg.eig_banded` (LAPACK's banded symmetric driver) finds the eigenvalues quickly, but
+to return eigenvectors it forms the N × N orthogonal matrix that reduces the band to tridiagonal
+form, which grows roughly like N³. Timing the drivers on the harmonic-oscillator matrices:
+
+<!-- BEGIN:fd4_cost -->
+| N | fd2, tridiagonal driver, 4 eigenpairs (ms) | fd4, banded driver, 4 eigenvalues (ms) | fd4, banded driver, 4 eigenpairs (ms) |
+|---|---|---|---|
+| 320 | 0.5 (0.5-0.6) | 0.8 (0.8-0.8) | 2.7 (2.6-2.7) |
+| 640 | 1.0 (1.0-1.0) | 2.1 (2.0-2.1) | 28.1 (27.2-29.3) |
+| 1280 | 2.0 (1.9-2.1) | 6.1 (5.8-6.3) | 370.6 (341.7-416.0) |
+<!-- END:fd4_cost -->
+
+Inverse iteration with the banded matrix (or `scipy.sparse.linalg.eigsh` in shift-invert mode)
+would avoid forming that matrix.
 
 **Hard walls**: infinite well on `[0, 1]` and linear ramp `V = x` on `[0, 30]`, both with exact
 levels and eigenfunctions that have a non-zero slope at the wall (`fourier` is periodic and is
 left out; `chebyshev` is spectral, so no order is given):
 
 <!-- BEGIN:hard_walls -->
-| Method | Infinite well: error, smallest N | Error, largest N | Last-pair order | Linear ramp: error, smallest N | Error, largest N | Last-pair order |
-|---|---|---|---|---|---|---|
-| fd2 | 6.47e-01 (N=39) | 1.01e-02 (N=319) | 2.00 | 3.94e-02 (N=149) | 6.05e-04 (N=1199) | 2.00 |
-| fd4 | 8.47e-03 (N=39) | 2.09e-06 (N=319) | 4.00 | 1.53e-03 (N=149) | 3.86e-07 (N=1199) | 4.00 |
-| numerov | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
-| shooting | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
-| chebyshev | 3.98e-01 (N=8) | 2.70e-13 (N=24) | spectral | 3.53e-04 (N=32) | 1.92e-13 (N=96) | spectral |
+| Problem | Method | Error, smallest N | Error, largest N | Last-pair order |
+|---|---|---|---|---|
+| infinite-well | fd2 | 6.47e-01 (N=39) | 1.01e-02 (N=319) | 2.00 |
+| infinite-well | fd4 | 8.47e-03 (N=39) | 2.09e-06 (N=319) | 4.00 |
+| infinite-well | numerov | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 |
+| infinite-well | shooting | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 |
+| infinite-well | chebyshev | 3.98e-01 (N=8) | 2.70e-13 (N=24) | spectral |
+| linear-ramp | fd2 | 3.94e-02 (N=149) | 6.05e-04 (N=1199) | 2.00 |
+| linear-ramp | fd4 | 1.53e-03 (N=149) | 3.86e-07 (N=1199) | 4.00 |
+| linear-ramp | numerov | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
+| linear-ramp | shooting | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
+| linear-ramp | chebyshev | 3.53e-04 (N=32) | 1.92e-13 (N=96) | spectral |
 <!-- END:hard_walls -->
 
 The five-point stencil of `fd4` needs ψ one node *outside* the box next to each wall. The solver
@@ -207,9 +237,9 @@ Same grid and time step for all methods (1D: N = 512, L = 30, `t = 10`; 2D: 96 �
 <!-- BEGIN:conservation_1d -->
 | Method | dt | max abs(norm - 1) | max rel. energy drift | L2 error vs analytic | Time (s) |
 |---|---|---|---|---|---|
-| crank-nicolson | 2.0e-03 | 1.33e-14 | 2.74e-14 | 1.43e-02 | 0.133 |
-| split-step | 2.0e-03 | 4.06e-13 | 6.43e-07 | 3.02e-06 | 0.168 |
-| rk4 | 2.0e-03 | 1.91e-12 | 1.08e-11 | 1.42e-02 | 0.231 |
+| crank-nicolson | 2.0e-03 | 1.33e-14 | 2.74e-14 | 1.43e-02 | 0.115 (0.114-0.116) |
+| split-step | 2.0e-03 | 4.06e-13 | 6.43e-07 | 3.02e-06 | 0.120 (0.117-0.121) |
+| rk4 | 2.0e-03 | 1.91e-12 | 1.08e-11 | 1.42e-02 | 0.227 (0.222-0.238) |
 <!-- END:conservation_1d -->
 
 2D:
@@ -217,9 +247,9 @@ Same grid and time step for all methods (1D: N = 512, L = 30, `t = 10`; 2D: 96 �
 <!-- BEGIN:conservation_2d -->
 | Method | dt | max abs(norm - 1) | max rel. energy drift | L2 error vs analytic | Time (s) |
 |---|---|---|---|---|---|
-| crank-nicolson | 5.0e-03 | 5.33e-15 | 1.01e-14 | 1.05e-01 | 1.713 |
-| split-step | 5.0e-03 | 2.84e-13 | 4.23e-06 | 2.75e-05 | 0.195 |
-| rk4 | 5.0e-03 | 1.90e-09 | 8.09e-09 | 1.03e-01 | 0.553 |
+| crank-nicolson | 5.0e-03 | 5.33e-15 | 1.01e-14 | 1.05e-01 | 2.322 (1.672-2.683) |
+| split-step | 5.0e-03 | 2.84e-13 | 4.23e-06 | 2.75e-05 | 0.182 (0.180-0.186) |
+| rk4 | 5.0e-03 | 1.90e-09 | 8.09e-09 | 1.03e-01 | 0.527 (0.518-0.537) |
 <!-- END:conservation_2d -->
 
 ![Norm drift, energy drift and cost versus accuracy](docs/figures/conservation.png)
@@ -269,7 +299,8 @@ the *stationary* Fourier solver:
 | relative L2 difference of the two wave functions | 1.18e-01 |
 | same difference with the grid spacing doubled (half as many points) | 4.41e-01 |
 | max abs(norm - 1): split-step / CN | 2.71e-14 / 2.22e-16 |
-| wall time: split-step / CN (s) | 0.14 / 1.36 |
+| wall time, split-step (s) | 0.14 (0.13-0.15) |
+| wall time, Crank-Nicolson (s) | 1.29 (1.28-1.33) |
 <!-- END:scattering_2d -->
 
 Both propagators are unitary, but the two wave functions differ noticeably. The difference
@@ -322,19 +353,32 @@ packet's Gaussian momentum distribution:
 
 Model problem: `−Δu = f` on `(0,1)²` with `u = 0` on the boundary, five-point stencil, manufactured
 solution `u = X(x)X(y)`, `X(s) = s(1−s)eˢ` (not a discrete eigenvector, so CG does real work).
-Iterations are counted to a relative residual of 1e-10; "setup" (factorisations, hierarchy) is
-included in the time.
+Iterations are counted to a relative residual of 1e-10:
 
 <!-- BEGIN:poisson_iterations -->
 | Solver | n = 31 | n = 63 | n = 127 | n = 255 |
 |---|---|---|---|---|
-| direct | 0.003 s (direct) | 0.009 s (direct) | 0.042 s (direct) | 0.286 s (direct) |
-| cg | 106 it / 0.002 s | 215 it / 0.009 s | 434 it / 0.056 s | 874 it / 0.440 s |
-| cg-jacobi | 106 it / 0.002 s | 215 it / 0.010 s | 434 it / 0.056 s | 874 it / 0.498 s |
-| cg-ic0 | 35 it / 0.003 s | 67 it / 0.016 s | 132 it / 0.099 s | 263 it / 0.747 s |
-| mg | 13 it / 0.007 s | 13 it / 0.011 s | 14 it / 0.022 s | 14 it / 0.069 s |
-| mg-cg | 8 it / 0.005 s | 8 it / 0.008 s | 8 it / 0.015 s | 8 it / 0.045 s |
+| cg | 106 | 215 | 434 | 874 |
+| cg-jacobi | 106 | 215 | 434 | 874 |
+| cg-ic0 | 35 | 67 | 132 | 263 |
+| mg | 13 | 13 | 14 | 14 |
+| mg-cg | 8 | 8 | 8 | 8 |
 <!-- END:poisson_iterations -->
+
+Wall time of one solve, including the setup (factorisations, multigrid hierarchy):
+
+<!-- BEGIN:poisson_times -->
+| Solver | n = 31 (s) | n = 63 (s) | n = 127 (s) | n = 255 (s) |
+|---|---|---|---|---|
+| direct | 0.003 (0.003-0.003) | 0.009 (0.009-0.009) | 0.044 (0.043-0.044) | 0.275 (0.271-0.364) |
+| cg | 0.002 (0.002-0.002) | 0.010 (0.009-0.010) | 0.057 (0.055-0.062) | 0.456 (0.442-0.478) |
+| cg-jacobi | 0.002 (0.002-0.002) | 0.010 (0.010-0.011) | 0.057 (0.055-0.059) | 0.491 (0.472-0.495) |
+| cg-ic0 | 0.003 (0.003-0.003) | 0.016 (0.016-0.016) | 0.101 (0.098-0.101) | 0.726 (0.710-0.796) |
+| mg | 0.007 (0.007-0.007) | 0.011 (0.011-0.011) | 0.024 (0.023-0.024) | 0.063 (0.060-0.066) |
+| mg-cg | 0.005 (0.005-0.006) | 0.008 (0.008-0.009) | 0.016 (0.016-0.016) | 0.041 (0.040-0.045) |
+
+Fastest median in this run: n = 31: cg, n = 63: mg-cg, n = 127: mg-cg, n = 255: mg-cg.
+<!-- END:poisson_times -->
 
 Discretisation error of the 5-point scheme (direct solve):
 
@@ -349,12 +393,12 @@ Discretisation error of the 5-point scheme (direct solve):
 
 ![Residual histories and iteration counts of the Poisson solvers](docs/figures/poisson_solvers.png)
 
-Notes. Iteration counts are deterministic: plain CG grows linearly with `n` (it doubles when `n`
-doubles), IC(0) cuts that by roughly a factor of three but not its growth, and multigrid
-(stand-alone V-cycles, or as a CG preconditioner) is independent of `n`. Wall-clock times are
-best-of-3 and depend on the machine: here the sparse direct solver wins at small `n` and
-multigrid-preconditioned CG at the largest `n`, but with NumPy slicing overhead in the
-multigrid cycle this ranking should not be over-interpreted.
+Notes. Plain CG needs twice the iterations when `n` doubles (the condition number grows like
+`n²`), IC(0) lowers the count by a constant factor but not its growth, and multigrid
+(stand-alone V-cycles, or as a CG preconditioner) is independent of `n`. A V-cycle is a sequence
+of NumPy operations on small arrays, so its overhead per iteration is large on small grids; the
+direct solver's fill-in grows with `n`. The fastest solver per grid size is printed from the run
+under the timing table.
 
 Jacobi preconditioning changes nothing for CG here because the stencil diagonal is
 constant (the two rows coincide exactly; the test suite asserts it). Multigrid uses weighted
@@ -379,12 +423,12 @@ includes that setup:
 <!-- BEGIN:heat_solvers -->
 | Linear solver | iterations per step | one-time setup (s) | total, 20 steps incl. setup (s) | max difference to direct |
 |---|---|---|---|---|
-| direct | 1 LU solve | 0.009 | 0.018 | 0.00e+00 |
-| cg | 48.6 | 0.000 | 0.046 | 1.89e-13 |
-| cg-ic0 | 16.9 | 0.005 | 0.064 | 1.29e-13 |
-| mg-cg | 8.0 | 0.001 | 0.139 | 5.57e-14 |
+| direct | 1 LU solve | 0.008 (0.008-0.009) | 0.016 (0.015-0.017) | 0.00e+00 |
+| cg | 48.6 | 0.000 (0.000-0.000) | 0.046 (0.042-0.046) | 1.89e-13 |
+| cg-ic0 | 16.9 | 0.004 (0.004-0.005) | 0.057 (0.056-0.062) | 1.29e-13 |
+| mg-cg | 8.0 | 0.001 (0.001-0.001) | 0.132 (0.129-0.135) | 5.57e-14 |
 
-Fastest to slowest in this run: direct, cg, cg-ic0, mg-cg.
+Fastest to slowest median in this run: direct, cg, cg-ic0, mg-cg.
 <!-- END:heat_solvers -->
 
 After the one-time factorisation, a direct step is one forward and one back substitution with
@@ -407,10 +451,13 @@ src/pdeqs/
   tunneling.py    FD scattering and wave-packet transmission
   elliptic.py     Poisson/heat: CG, IC(0), multigrid, drivers
   convergence.py  empirical-order studies
-  report.py       regenerates figures, tables, results.json and the README tables
+  report.py       runs every study; writes figures and results.json
+  tables.py       renders the README tables from results.json
+  timing.py       repeated wall-time measurements (median and range)
   plotting.py     matplotlib style
   cli.py          `pdeqs` command
-tests/            pytest suite
+tests/            pytest suite (test_readme_sync.py: README = rendered JSON)
+tools/            fill_readme.py
 docs/figures/     PNGs used above      docs/results/  results.json, tables.md
 ```
 
@@ -447,16 +494,21 @@ behaviour. `.github/workflows/ci.yml` runs lint, type check and tests on Python 
   placed between grid points deliberately to retain second-order behaviour.
 - Multigrid works only on `n = 2^k − 1` grids, with a plain weighted-Jacobi smoother; the
   `ic0` preconditioner is specialised to the five-point matrix.
-- Timings are single runs and indicative only (they vary from run to run and between
-  machines); orders and errors are deterministic.
+- Wall times are medians of repeated runs on one machine and are indicative only; errors,
+  orders and iteration counts are deterministic.
 - No adaptive time stepping, no time-dependent potentials, no 3D.
 
 ## Reproducing the results
 
 ```bash
 pip install -e ".[dev]"
-pdeqs report --out docs --readme README.md   # about one minute
+pdeqs report --out docs --readme README.md   # all studies, a few minutes
+python tools/fill_readme.py                  # README tables from docs/results/results.json only
 ```
+
+Every table in this README is rendered from `docs/results/results.json` by `pdeqs.tables`;
+`tests/test_readme_sync.py` fails if the README, `docs/results/tables.md` and the JSON disagree,
+and recomputes a few of the numbers from the code.
 
 Environment of the committed results:
 

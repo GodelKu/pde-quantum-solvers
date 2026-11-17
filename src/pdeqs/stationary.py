@@ -108,17 +108,25 @@ class FiniteDifference4(StationarySolver):
     order = "4"
 
     def _solve(self, potential, x_min, x_max, n, k):
-        x, h = _interior_grid(x_min, x_max, n)
-        # -1/2 * (-1/12, 4/3, -5/2, 4/3, -1/12)/h^2 : diagonal 5/4, off-diagonals -2/3, +1/24
-        ab = np.zeros((3, n))  # lower banded storage
-        ab[0] = 1.25 / h**2 + potential(x)
-        ab[1, : n - 1] = -(2.0 / 3.0) / h**2
-        ab[2, : n - 2] = (1.0 / 24.0) / h**2
-        # odd ghost node at each wall: the coupling to psi(-h) = -psi(h) moves onto the diagonal
-        ab[0, 0] -= (1.0 / 24.0) / h**2
-        ab[0, -1] -= (1.0 / 24.0) / h**2
+        x, h, ab = fd4_banded_matrix(potential, x_min, x_max, n)
         w, v = eig_banded(ab, lower=True, select="i", select_range=(0, k - 1))
         return x, w, _normalise_columns(v, h)
+
+
+def fd4_banded_matrix(
+    potential: Potential, x_min: float, x_max: float, n: int
+) -> tuple[FloatArray, float, FloatArray]:
+    """Grid, spacing and the ``fd4`` Hamiltonian in LAPACK lower banded storage ``(3, n)``."""
+    x, h = _interior_grid(x_min, x_max, n)
+    # -1/2 * (-1/12, 4/3, -5/2, 4/3, -1/12)/h^2 : diagonal 5/4, off-diagonals -2/3, +1/24
+    ab = np.zeros((3, n))
+    ab[0] = 1.25 / h**2 + potential(x)
+    ab[1, : n - 1] = -(2.0 / 3.0) / h**2
+    ab[2, : n - 2] = (1.0 / 24.0) / h**2
+    # odd ghost node at each wall: the coupling to psi(-h) = -psi(h) moves onto the diagonal
+    ab[0, 0] -= (1.0 / 24.0) / h**2
+    ab[0, -1] -= (1.0 / 24.0) / h**2
+    return x, h, ab
 
 
 class Numerov(StationarySolver):

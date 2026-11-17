@@ -1,35 +1,50 @@
 ### stationary_harmonic
 
-| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
+| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.01 | 2.00 | 1.24e-01 (N=40) | 1.22e-04 (N=1280) | 2.2 |
-| fd4 | 4 | 3.98 | 4.00 | 1.41e-02 (N=40) | 1.60e-08 (N=1280) | 384.6 |
-| numerov | 4 | 4.01 | 4.00 | 5.98e-03 (N=40) | 5.99e-09 (N=1280) | 473.5 |
-| fourier | spectral | - | - | 1.00e-01 (N=16) | 2.66e-14 (N=96) | 0.6 |
-| chebyshev | spectral | - | - | 6.47e-01 (N=16) | 2.49e-14 (N=96) | 3.2 |
-| shooting | 4 | 4.00 | 4.00 | 9.90e-06 (N=200) | 2.45e-09 (N=1600) | 373.3 |
+| fd2 | 2 | 2.01 | 2.00 | 1.24e-01 (N=40) | 1.22e-04 (N=1280) | 2.0 (2.0-2.1) |
+| fd4 | 4 | 3.98 | 4.00 | 1.41e-02 (N=40) | 1.60e-08 (N=1280) | 335.5 (331.2-344.8) |
+| numerov | 4 | 4.01 | 4.00 | 5.98e-03 (N=40) | 5.99e-09 (N=1280) | 428.4 (414.8-429.1) |
+| fourier | spectral | - | - | 1.00e-01 (N=16) | 2.66e-14 (N=96) | 0.6 (0.6-0.6) |
+| chebyshev | spectral | - | - | 6.47e-01 (N=16) | 2.49e-14 (N=96) | 3.2 (3.0-3.5) |
+| shooting | 4 | 4.00 | 4.00 | 9.90e-06 (N=200) | 2.45e-09 (N=1600) | 369.6 (350.5-372.3) |
 
 ### stationary_double_well
 
-| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
+| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.01 | 2.00 | 8.07e-02 (N=40) | 8.06e-05 (N=1280) | 2.0 |
-| fd4 | 4 | 3.98 | 4.00 | 7.32e-03 (N=40) | 8.30e-09 (N=1280) | 398.0 |
-| numerov | 4 | 4.01 | 4.00 | 3.10e-03 (N=40) | 3.11e-09 (N=1280) | 442.1 |
-| fourier | spectral | - | - | 1.41e-01 (N=16) | 5.42e-13 (N=96) | 0.6 |
-| chebyshev | spectral | - | - | 4.16e-01 (N=16) | 4.81e-13 (N=96) | 3.3 |
-| shooting | 4 | 4.00 | 4.00 | 5.14e-06 (N=200) | 1.28e-09 (N=1600) | 381.4 |
+| fd2 | 2 | 2.01 | 2.00 | 8.07e-02 (N=40) | 8.06e-05 (N=1280) | 1.8 (1.8-1.9) |
+| fd4 | 4 | 3.98 | 4.00 | 7.32e-03 (N=40) | 8.30e-09 (N=1280) | 343.9 (337.1-356.2) |
+| numerov | 4 | 4.01 | 4.00 | 3.10e-03 (N=40) | 3.11e-09 (N=1280) | 424.8 (418.6-427.7) |
+| fourier | spectral | - | - | 1.41e-01 (N=16) | 5.42e-13 (N=96) | 0.6 (0.5-0.6) |
+| chebyshev | spectral | - | - | 4.16e-01 (N=16) | 4.81e-13 (N=96) | 3.2 (3.2-3.5) |
+| shooting | 4 | 4.00 | 4.00 | 5.14e-06 (N=200) | 1.28e-09 (N=1600) | 358.2 (351.8-367.0) |
 
 ### stationary_morse
 
-| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time, largest N (ms) |
+| Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
 |---|---|---|---|---|---|---|
-| fd2 | 2 | 2.03 | 2.00 | 8.57e-01 (N=40) | 7.83e-04 (N=1280) | 2.1 |
-| fd4 | 4 | 3.87 | 4.00 | 2.53e-01 (N=40) | 4.59e-07 (N=1280) | 360.7 |
-| numerov | 4 | 3.94 | 4.00 | 1.15e-01 (N=40) | 1.72e-07 (N=1280) | 518.3 |
-| fourier | spectral | - | - | 2.93e+00 (N=16) | 3.95e-10 (N=96) | 0.6 |
-| chebyshev | spectral | - | - | 1.02e+00 (N=16) | 5.51e-14 (N=96) | 3.0 |
-| shooting | 4 | 4.00 | 4.00 | 2.87e-04 (N=200) | 7.06e-08 (N=1600) | 383.6 |
+| fd2 | 2 | 2.03 | 2.00 | 8.57e-01 (N=40) | 7.83e-04 (N=1280) | 2.0 (2.0-2.1) |
+| fd4 | 4 | 3.87 | 4.00 | 2.53e-01 (N=40) | 4.59e-07 (N=1280) | 343.0 (335.0-372.9) |
+| numerov | 4 | 3.94 | 4.00 | 1.15e-01 (N=40) | 1.72e-07 (N=1280) | 434.0 (428.4-459.9) |
+| fourier | spectral | - | - | 2.93e+00 (N=16) | 3.95e-10 (N=96) | 0.6 (0.6-0.6) |
+| chebyshev | spectral | - | - | 1.02e+00 (N=16) | 5.51e-14 (N=96) | 2.9 (2.9-3.1) |
+| shooting | 4 | 4.00 | 4.00 | 2.87e-04 (N=200) | 7.06e-08 (N=1600) | 364.7 (352.6-384.2) |
+
+### hard_walls
+
+| Problem | Method | Error, smallest N | Error, largest N | Last-pair order |
+|---|---|---|---|---|
+| infinite-well | fd2 | 6.47e-01 (N=39) | 1.01e-02 (N=319) | 2.00 |
+| infinite-well | fd4 | 8.47e-03 (N=39) | 2.09e-06 (N=319) | 4.00 |
+| infinite-well | numerov | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 |
+| infinite-well | shooting | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 |
+| infinite-well | chebyshev | 3.98e-01 (N=8) | 2.70e-13 (N=24) | spectral |
+| linear-ramp | fd2 | 3.94e-02 (N=149) | 6.05e-04 (N=1199) | 2.00 |
+| linear-ramp | fd4 | 1.53e-03 (N=149) | 3.86e-07 (N=1199) | 4.00 |
+| linear-ramp | numerov | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
+| linear-ramp | shooting | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
+| linear-ramp | chebyshev | 3.53e-04 (N=32) | 1.92e-13 (N=96) | spectral |
 
 ### stationary_wavefunctions
 
@@ -53,22 +68,20 @@
 | fourier | 96 | 1.33855193 | 9.716350e-03 |
 | chebyshev | 96 | 1.33855193 | 9.716350e-03 |
 
-### hard_walls
-
-| Method | Infinite well: error, smallest N | Error, largest N | Last-pair order | Linear ramp: error, smallest N | Error, largest N | Last-pair order |
-|---|---|---|---|---|---|---|
-| fd2 | 6.47e-01 (N=39) | 1.01e-02 (N=319) | 2.00 | 3.94e-02 (N=149) | 6.05e-04 (N=1199) | 2.00 |
-| fd4 | 8.47e-03 (N=39) | 2.09e-06 (N=319) | 4.00 | 1.53e-03 (N=149) | 3.86e-07 (N=1199) | 4.00 |
-| numerov | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
-| shooting | 3.22e-03 (N=39) | 7.82e-07 (N=319) | 4.00 | 5.83e-04 (N=149) | 1.41e-07 (N=1199) | 4.00 |
-| chebyshev | 3.98e-01 (N=8) | 2.70e-13 (N=24) | spectral | 3.53e-04 (N=32) | 1.92e-13 (N=96) | spectral |
-
 ### morse_box
 
 | Box | Chebyshev error, N = 96 | Chebyshev error, N = 192 |
 |---|---|---|
 | [-2, 18] | 5.51e-14 | 1.42e-14 |
 | [-1.5, 18] | 1.55e-07 | 1.55e-07 |
+
+### fd4_cost
+
+| N | fd2, tridiagonal driver, 4 eigenpairs (ms) | fd4, banded driver, 4 eigenvalues (ms) | fd4, banded driver, 4 eigenpairs (ms) |
+|---|---|---|---|
+| 320 | 0.5 (0.5-0.6) | 0.8 (0.8-0.8) | 2.7 (2.6-2.7) |
+| 640 | 1.0 (1.0-1.0) | 2.1 (2.0-2.1) | 28.1 (27.2-29.3) |
+| 1280 | 2.0 (1.9-2.1) | 6.1 (5.8-6.3) | 370.6 (341.7-416.0) |
 
 ### timedep_orders
 
@@ -82,17 +95,17 @@
 
 | Method | dt | max abs(norm - 1) | max rel. energy drift | L2 error vs analytic | Time (s) |
 |---|---|---|---|---|---|
-| crank-nicolson | 2.0e-03 | 1.33e-14 | 2.74e-14 | 1.43e-02 | 0.133 |
-| split-step | 2.0e-03 | 4.06e-13 | 6.43e-07 | 3.02e-06 | 0.168 |
-| rk4 | 2.0e-03 | 1.91e-12 | 1.08e-11 | 1.42e-02 | 0.231 |
+| crank-nicolson | 2.0e-03 | 1.33e-14 | 2.74e-14 | 1.43e-02 | 0.115 (0.114-0.116) |
+| split-step | 2.0e-03 | 4.06e-13 | 6.43e-07 | 3.02e-06 | 0.120 (0.117-0.121) |
+| rk4 | 2.0e-03 | 1.91e-12 | 1.08e-11 | 1.42e-02 | 0.227 (0.222-0.238) |
 
 ### conservation_2d
 
 | Method | dt | max abs(norm - 1) | max rel. energy drift | L2 error vs analytic | Time (s) |
 |---|---|---|---|---|---|
-| crank-nicolson | 5.0e-03 | 5.33e-15 | 1.01e-14 | 1.05e-01 | 1.713 |
-| split-step | 5.0e-03 | 2.84e-13 | 4.23e-06 | 2.75e-05 | 0.195 |
-| rk4 | 5.0e-03 | 1.90e-09 | 8.09e-09 | 1.03e-01 | 0.553 |
+| crank-nicolson | 5.0e-03 | 5.33e-15 | 1.01e-14 | 1.05e-01 | 2.322 (1.672-2.683) |
+| split-step | 5.0e-03 | 2.84e-13 | 4.23e-06 | 2.75e-05 | 0.182 (0.180-0.186) |
+| rk4 | 5.0e-03 | 1.90e-09 | 8.09e-09 | 1.03e-01 | 0.527 (0.518-0.537) |
 
 ### rk4_stability
 
@@ -121,7 +134,8 @@
 | relative L2 difference of the two wave functions | 1.18e-01 |
 | same difference with the grid spacing doubled (half as many points) | 4.41e-01 |
 | max abs(norm - 1): split-step / CN | 2.71e-14 / 2.22e-16 |
-| wall time: split-step / CN (s) | 0.14 / 1.36 |
+| wall time, split-step (s) | 0.14 (0.13-0.15) |
+| wall time, Crank-Nicolson (s) | 1.29 (1.28-1.33) |
 
 ### tunneling_fd
 
@@ -149,12 +163,24 @@
 
 | Solver | n = 31 | n = 63 | n = 127 | n = 255 |
 |---|---|---|---|---|
-| direct | 0.003 s (direct) | 0.009 s (direct) | 0.042 s (direct) | 0.286 s (direct) |
-| cg | 106 it / 0.002 s | 215 it / 0.009 s | 434 it / 0.056 s | 874 it / 0.440 s |
-| cg-jacobi | 106 it / 0.002 s | 215 it / 0.010 s | 434 it / 0.056 s | 874 it / 0.498 s |
-| cg-ic0 | 35 it / 0.003 s | 67 it / 0.016 s | 132 it / 0.099 s | 263 it / 0.747 s |
-| mg | 13 it / 0.007 s | 13 it / 0.011 s | 14 it / 0.022 s | 14 it / 0.069 s |
-| mg-cg | 8 it / 0.005 s | 8 it / 0.008 s | 8 it / 0.015 s | 8 it / 0.045 s |
+| cg | 106 | 215 | 434 | 874 |
+| cg-jacobi | 106 | 215 | 434 | 874 |
+| cg-ic0 | 35 | 67 | 132 | 263 |
+| mg | 13 | 13 | 14 | 14 |
+| mg-cg | 8 | 8 | 8 | 8 |
+
+### poisson_times
+
+| Solver | n = 31 (s) | n = 63 (s) | n = 127 (s) | n = 255 (s) |
+|---|---|---|---|---|
+| direct | 0.003 (0.003-0.003) | 0.009 (0.009-0.009) | 0.044 (0.043-0.044) | 0.275 (0.271-0.364) |
+| cg | 0.002 (0.002-0.002) | 0.010 (0.009-0.010) | 0.057 (0.055-0.062) | 0.456 (0.442-0.478) |
+| cg-jacobi | 0.002 (0.002-0.002) | 0.010 (0.010-0.011) | 0.057 (0.055-0.059) | 0.491 (0.472-0.495) |
+| cg-ic0 | 0.003 (0.003-0.003) | 0.016 (0.016-0.016) | 0.101 (0.098-0.101) | 0.726 (0.710-0.796) |
+| mg | 0.007 (0.007-0.007) | 0.011 (0.011-0.011) | 0.024 (0.023-0.024) | 0.063 (0.060-0.066) |
+| mg-cg | 0.005 (0.005-0.006) | 0.008 (0.008-0.009) | 0.016 (0.016-0.016) | 0.041 (0.040-0.045) |
+
+Fastest median in this run: n = 31: cg, n = 63: mg-cg, n = 127: mg-cg, n = 255: mg-cg.
 
 ### poisson_discretisation
 
@@ -176,12 +202,16 @@
 
 | Linear solver | iterations per step | one-time setup (s) | total, 20 steps incl. setup (s) | max difference to direct |
 |---|---|---|---|---|
-| direct | 1 LU solve | 0.009 | 0.018 | 0.00e+00 |
-| cg | 48.6 | 0.000 | 0.046 | 1.89e-13 |
-| cg-ic0 | 16.9 | 0.005 | 0.064 | 1.29e-13 |
-| mg-cg | 8.0 | 0.001 | 0.139 | 5.57e-14 |
+| direct | 1 LU solve | 0.008 (0.008-0.009) | 0.016 (0.015-0.017) | 0.00e+00 |
+| cg | 48.6 | 0.000 (0.000-0.000) | 0.046 (0.042-0.046) | 1.89e-13 |
+| cg-ic0 | 16.9 | 0.004 (0.004-0.005) | 0.057 (0.056-0.062) | 1.29e-13 |
+| mg-cg | 8.0 | 0.001 (0.001-0.001) | 0.132 (0.129-0.135) | 5.57e-14 |
 
-Fastest to slowest in this run: direct, cg, cg-ic0, mg-cg.
+Fastest to slowest median in this run: direct, cg, cg-ic0, mg-cg.
+
+### timing_note
+
+Wall times are the median of 5 runs after one warm-up run, with the fastest and slowest of those runs in brackets.
 
 ### environment
 

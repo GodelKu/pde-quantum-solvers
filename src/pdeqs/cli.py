@@ -32,6 +32,7 @@ from .elliptic import (
 from .potentials import RectangularBarrier
 from .report import format_study, generate_report, num, sci
 from .stationary import SOLVERS
+from .timing import REPEATS
 from .tunneling import transmission_fd
 
 TIME_METHODS = tuple(TIME_STEPS)
@@ -171,7 +172,7 @@ def cmd_evolve(args: argparse.Namespace) -> int:
             f"  {r['method']:15s} norm drift {sci(float(r['max_norm_drift']))}  "
             f"rel. energy drift {sci(float(r['relative_energy_drift']))}  "
             f"L2 error {sci(float(r['l2_error_vs_analytic']))}  "
-            f"time {num(float(r['seconds']), 3)} s"
+            f"time {num(float(r['seconds']['median']), 3)} s"
         )
     return 0
 
@@ -202,7 +203,7 @@ def cmd_poisson(args: argparse.Namespace) -> int:
 
 def cmd_report(args: argparse.Namespace) -> int:
     readme = Path(args.readme) if args.readme else None
-    generate_report(Path(args.out), readme, quick=args.quick)
+    generate_report(Path(args.out), readme, quick=args.quick, repeats=args.repeats)
     return 0
 
 
@@ -262,6 +263,9 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--out", default="docs")
     r.add_argument("--readme", default=None)
     r.add_argument("--quick", action="store_true")
+    r.add_argument(
+        "--repeats", type=int, default=REPEATS, help="timed runs per wall time (median reported)"
+    )
     r.set_defaults(func=cmd_report)
 
     sub.add_parser("list", help="list available solvers").set_defaults(func=cmd_list)
