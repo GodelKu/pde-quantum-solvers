@@ -123,6 +123,18 @@ HARD_WALL_POTENTIALS: dict[str, Potential1D] = {
 
 ALL_POTENTIALS: dict[str, Potential1D] = {**POTENTIALS, **HARD_WALL_POTENTIALS}
 
+#: Refinements for the hard-wall problems; ``h = (x_max - x_min) / (n + 1)`` halves exactly.
+HARD_WALL_SIZES: dict[str, dict[str, list[int]]] = {
+    "infinite-well": {
+        **{m: [39, 79, 159, 319] for m in ("fd2", "fd4", "numerov", "shooting")},
+        "chebyshev": [8, 12, 16, 24],
+    },
+    "linear-ramp": {
+        **{m: [149, 299, 599, 1199] for m in ("fd2", "fd4", "numerov", "shooting")},
+        "chebyshev": [32, 48, 64, 96],
+    },
+}
+
 
 def reference_energies(potential: Potential1D, n_states: int) -> tuple[FloatArray, str]:
     """Analytic energies if known, else a converged Chebyshev spectrum (N = 240)."""

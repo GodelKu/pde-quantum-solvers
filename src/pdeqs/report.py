@@ -7,7 +7,6 @@ are refreshed between ``<!-- BEGIN:name -->`` / ``<!-- END:name -->`` markers.
 from __future__ import annotations
 
 import json
-import os
 import platform
 import re
 import time
@@ -21,6 +20,7 @@ import scipy
 
 from . import plotting as pl
 from .convergence import (
+    HARD_WALL_SIZES,
     POTENTIALS,
     STATIONARY_SIZES,
     TIME_STEPS,
@@ -40,7 +40,7 @@ from .elliptic import (
     solve_poisson,
 )
 from .grid import Grid
-from .potentials import DoubleWell, Harmonic, RectangularBarrier
+from .potentials import DoubleWell, Harmonic, Morse, RectangularBarrier
 from .stationary import SOLVERS, align_sign
 from .timedep import (
     TIME_SOLVERS,
@@ -71,12 +71,12 @@ def md_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
 
 
 def environment() -> dict[str, str]:
+    """Library versions and the OS family only (no host names, kernel strings or hardware)."""
     return {
         "python": platform.python_version(),
         "numpy": np.__version__,
         "scipy": scipy.__version__,
-        "platform": platform.platform(),
-        "cpu_count": str(os.cpu_count()),
+        "os": platform.system(),
     }
 
 
@@ -248,6 +248,51 @@ def stationary_section(fig_dir: Path, quick: bool) -> tuple[dict[str, Any], dict
     data["double_well_splitting"] = split
     tables["double_well_splitting"] = md_table(
         ["Method", "N", "E_0", "E_1 - E_0 (tunnel splitting)"], rows
+    )
+
+    # Hard walls: psi' != 0 at the wall (Fourier is periodic and is left out)
+    walls: dict[str, Any] = {}
+    rows = []
+    for method in HARD_WALL_SIZES["infinite-well"]:
+        cells = [method]
+        for pname, wall_sizes in HARD_WALL_SIZES.items():
+            st = stationary_study(method, pname, sizes=wall_sizes[method])
+            walls.setdefault(pname, {})[method] = study_to_dict(st)
+            last = "spectral" if st.is_spectral else num(st.pairwise_orders[-1])
+            cells += [
+                f"{sci(st.errors[0])} (N={st.sizes[0]})",
+                f"{sci(st.errors[-1])} (N={st.sizes[-1]})",
+                last,
+            ]
+        rows.append(cells)
+    data["hard_walls"] = walls
+    tables["hard_walls"] = md_table(
+        [
+            "Method",
+            "Infinite well: error, smallest N",
+            "Error, largest N",
+            "Last-pair order",
+            "Linear ramp: error, smallest N",
+            "Error, largest N",
+            "Last-pair order",
+        ],
+        rows,
+    )
+
+    # Morse: a left wall too close to the classical turning region truncates the states
+    morse = Morse()
+    box: dict[str, list[float]] = {}
+    rows = []
+    for left in (morse.box[0], morse.box[0] + 0.5):
+        errs = []
+        for n in (96, 192):
+            e = SOLVERS["chebyshev"].solve(morse, left, morse.box[1], n, 4).energies
+            errs.append(float(np.max(np.abs(e - morse.exact_energies(4)))))
+        box[f"{left:g}"] = errs
+        rows.append([f"[{left:g}, {morse.box[1]:g}]", sci(errs[0]), sci(errs[1])])
+    data["morse_box"] = box
+    tables["morse_box"] = md_table(
+        ["Box", "Chebyshev error, N = 96", "Chebyshev error, N = 192"], rows
     )
     return data, tables
 
@@ -905,8 +950,7 @@ def generate_report(
             print(f"[report] {name}: {time.perf_counter() - t0:.1f} s")
     env = results["environment"]
     tables["environment"] = (
-        f"Python {env['python']}, NumPy {env['numpy']}, SciPy {env['scipy']}, "
-        f"{env['cpu_count']} CPU cores, {env['platform']}"
+        f"Python {env['python']}, NumPy {env['numpy']}, SciPy {env['scipy']}, {env['os']}"
     )
     (res_dir / "results.json").write_text(
         json.dumps(results, indent=1, default=float), encoding="utf-8"
