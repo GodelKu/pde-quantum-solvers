@@ -574,17 +574,16 @@ Python 3.13.17, NumPy 2.5.3, SciPy 1.18.1, Linux
 - [docs/ROADMAP.md](docs/ROADMAP.md): planned extensions, each with a failing test that defines
   done.
 
-## How this was built
+## Development
 
-I chose the problems and the rules for checking the solvers. The first implementation was
-written with an AI coding assistant (Claude). I then had it reviewed by a second model (Claude
-Fable 5.2), which re-ran the report, reproduced the claims with its own scripts and injected bugs
-to see whether the tests catch them. The review found the problems listed in the
+AI-assisted development. I chose the problems and the rules for checking the solvers. An
+independent review of version 0.1 re-ran the report, reproduced the claims with its own scripts
+and injected bugs to see whether the tests catch them. It found the problems listed in the
 [changelog](CHANGELOG.md): `fd4` was first order at hard walls, the heat-equation benchmark
 refactorised a constant matrix at every step, one validation was not independent, and the
 timings were single runs. Version 0.2 fixes them. The roadmap items are mine to implement.
 
-The rules that keep generated code honest:
+The rules that keep the results honest:
 
 * every solver is compared with an exact result (oscillator, Morse, infinite well, Airy levels,
   rectangular-barrier `T(E)`, coherent states) or with an independent method;
@@ -596,7 +595,5 @@ The rules that keep generated code honest:
 * wall times are medians of repeated runs, and rankings that depend on them are printed from the
   run, not written by hand;
 * CI runs lint, type checks and tests on Linux, macOS and Windows, Python 3.10 to 3.13.
-
-Commits made with the assistant carry a `Co-Authored-By` line.
 
 Author: Georgii Baiev, physics student. MIT license, see [LICENSE](LICENSE).

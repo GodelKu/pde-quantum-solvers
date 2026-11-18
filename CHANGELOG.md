@@ -2,7 +2,7 @@
 
 ## 0.2.0
 
-After an independent review by a second model (Claude Fable 5.2). The review re-ran the report,
+After an independent review. The review re-ran the report,
 reproduced the claims with its own scripts (including problems the repository did not test), and
 injected 18 bugs into the code to see which ones the test suite catches; 17 were caught.
 
