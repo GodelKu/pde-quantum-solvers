@@ -2,36 +2,17 @@
 
 [![CI](https://github.com/GodelKu/pde-quantum-solvers/actions/workflows/ci.yml/badge.svg)](https://github.com/GodelKu/pde-quantum-solvers/actions/workflows/ci.yml) ![Python 3.10 to 3.13](https://img.shields.io/badge/python-3.10%20to%203.13-blue) ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
-From-scratch numerical solvers for the Schrödinger equation and related PDEs, written to be
-**compared against each other and against exact results**: accuracy, empirical order of
-convergence, conservation of norm and energy, and cost.
+Numerical solvers for the Schrödinger equation and related PDEs, written from scratch so that
+they can be compared with each other and with exact results. For each method I measure the
+accuracy, the empirical order of convergence, the conservation of norm and energy, and the cost.
 
-Every table and figure below was produced by running the code in this repository
-(`pdeqs report`); nothing in them is typed in by hand, and a test checks that the tables match
-the results file. The numbers refer to the environment listed in
-[Reproducing the results](#reproducing-the-results). Version 0.2 fixes the problems found by an
-independent review ([changelog](CHANGELOG.md)).
+Every table and figure below comes from running `pdeqs report`. The tables are rendered from a
+results file, and a test checks that the two match. The numbers refer to the environment listed
+in [Reproducing the results](#reproducing-the-results). Version 0.2 fixes the problems found by
+an independent automated review ([changelog](CHANGELOG.md)).
 
-Units are `hbar = m = 1` throughout.
-
-## What is implemented
-
-| Problem | Methods (all implemented here; NumPy/SciPy supply only linear algebra and FFTs) |
-|---|---|
-| Stationary 1D Schrödinger, `-ψ''/2 + Vψ = Eψ` | 3-point finite differences (`fd2`), 5-point finite differences (`fd4`), matrix Numerov (`numerov`), Fourier collocation (`fourier`), Chebyshev collocation (`chebyshev`), shooting with Numerov integration and node-count bisection (`shooting`) |
-| Time-dependent 1D/2D, `iψ_t = Hψ` | Crank–Nicolson (`crank-nicolson`), Strang split-step Fourier (`split-step`), classical RK4 on the finite-difference Hamiltonian (`rk4`) |
-| Tunnelling through a rectangular barrier | stationary finite-difference scattering with transparent boundaries; wave-packet collision with the split-step solver; both versus the exact `T(E)` |
-| 2D Poisson and heat equations (sparse) | direct sparse LU, CG, CG + Jacobi, CG + incomplete Cholesky (IC(0), written here), geometric multigrid V-cycle, multigrid-preconditioned CG; backward Euler / Crank–Nicolson heat solver |
-
-Test potentials: harmonic oscillator and Morse potential (both with closed-form spectra) and a
-double well (no closed form; compared with a converged Chebyshev reference). Two hard-wall
-problems test the boundary treatment, because their eigenfunctions have a non-zero slope at the
-wall: the infinite square well (exact levels `n²π²/(2L²)`) and a linear ramp `V = x` with a wall at
-`x = 0` (exact levels from the zeros of the Airy function).
-
-All stationary solvers share one interface (`StationarySolver.solve(potential, x_min, x_max,
-n_points, n_states)`), all propagators share another (`TimeDependentSolver.propagate(psi0,
-t_final, n_steps)`), and the elliptic solvers are selected by name in `solve_poisson`.
+Author: Georgii Baiev, physics student. MIT license, see [LICENSE](LICENSE).
+AI-assisted development.
 
 ## Install and use
 
@@ -48,8 +29,9 @@ pdeqs report --out docs --readme README.md  # regenerate every figure and table 
 ```
 
 `pdeqs convergence <method>` prints the error for a sequence of refinements, the observed
-order between successive refinements, a least-squares fitted order, and writes a PNG
-(`--no-plot` to skip, `--quick` for fewer refinements). Python API:
+order between successive refinements and a least-squares fitted order, and writes a PNG
+(`--no-plot` to skip, `--quick` for fewer refinements). The solvers can also be called from
+Python:
 
 ```python
 from pdeqs.potentials import Morse
@@ -60,12 +42,45 @@ res = SOLVERS["numerov"].solve(pot, *pot.box, n_points=800, n_states=4)
 print(res.energies - pot.exact_energies(4))
 ```
 
+## What is implemented
+
+Units are `hbar = m = 1` throughout.
+
+| Problem | Methods (all implemented here; NumPy/SciPy supply only linear algebra and FFTs) |
+|---|---|
+| Stationary 1D Schrödinger, `-ψ''/2 + Vψ = Eψ` | 3-point finite differences (`fd2`), 5-point finite differences (`fd4`), matrix Numerov (`numerov`), Fourier collocation (`fourier`), Chebyshev collocation (`chebyshev`), shooting with Numerov integration and node-count bisection (`shooting`) |
+| Time-dependent 1D/2D, `iψ_t = Hψ` | Crank-Nicolson (`crank-nicolson`), Strang split-step Fourier (`split-step`), classical RK4 on the finite-difference Hamiltonian (`rk4`) |
+| Tunnelling through a rectangular barrier | stationary finite-difference scattering with transparent boundaries; wave-packet collision with the split-step solver; both versus the exact `T(E)` |
+| 2D Poisson and heat equations (sparse) | direct sparse LU, CG, CG + Jacobi, CG + incomplete Cholesky (IC(0), written here), geometric multigrid V-cycle, multigrid-preconditioned CG; backward Euler / Crank-Nicolson heat solver |
+
+The test potentials are the harmonic oscillator and the Morse potential (both with closed-form
+spectra) and a double well (no closed form; compared with a converged Chebyshev reference). Two
+hard-wall problems test the boundary treatment, because their eigenfunctions have a non-zero
+slope at the wall: the infinite square well (exact levels `n²π²/(2L²)`) and a linear ramp `V = x`
+with a wall at `x = 0` (exact levels from the zeros of the Airy function).
+
+All stationary solvers share one interface (`StationarySolver.solve(potential, x_min, x_max,
+n_points, n_states)`), all propagators share another (`TimeDependentSolver.propagate(psi0,
+t_final, n_steps)`), and the elliptic solvers are selected by name in `solve_poisson`.
+
+## Main results
+
+- The finite-difference, Numerov and shooting solvers reach their nominal orders on every test
+  potential, and the Fourier and Chebyshev solvers converge spectrally.
+- `fd4` stays fourth order at hard walls only with an odd extension of ψ beyond the wall. With a
+  zero ghost value it is first order there.
+- Crank-Nicolson and split-step conserve the norm to round-off. RK4 is stable only for
+  `dt · rho(H) < 2√2`.
+- A wave packet's transmission through a barrier has to be compared with `T` averaged over the
+  packet's momentum distribution. `T(mean energy)` is off by far more.
+- For the Poisson problem the multigrid iteration count does not grow with the grid, while plain
+  CG needs twice the iterations when `n` doubles.
+
 ## Results
 
-How errors are measured: *observed order* between two refinements is
-`log(e_i/e_{i+1}) / log(s_i/s_{i+1})` for step size `s`; *fitted order* is the least-squares
-slope of `log e` against `log s` over points above a 1e-11 round-off floor. For spectral
-methods no algebraic order exists, so none is reported.
+The observed order between two refinements is `log(e_i/e_{i+1}) / log(s_i/s_{i+1})` for step
+size `s`. The fitted order is the least-squares slope of `log e` against `log s` over points
+above a 1e-11 round-off floor. Spectral methods have no algebraic order, so none is reported.
 
 Errors, orders and iteration counts are deterministic.
 
@@ -83,7 +98,7 @@ The error is the maximum over the four lowest levels. References: exact formulas
 harmonic oscillator and the Morse potential, a Chebyshev solution with N = 240 for the double
 well. "Time" is the wall time of one solve at the largest N in the row.
 
-**Harmonic oscillator**
+Harmonic oscillator:
 
 <!-- BEGIN:stationary_harmonic -->
 | Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
@@ -96,7 +111,7 @@ well. "Time" is the wall time of one solve at the largest N in the row.
 | shooting | 4 | 4.00 | 4.00 | 9.90e-06 (N=200) | 2.45e-09 (N=1600) | 553.3 (433.4-614.7) |
 <!-- END:stationary_harmonic -->
 
-**Double well** (`V = 0.25 (x² − 4)²`)
+Double well (`V = 0.25 (x² − 4)²`):
 
 <!-- BEGIN:stationary_double_well -->
 | Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
@@ -109,7 +124,7 @@ well. "Time" is the wall time of one solve at the largest N in the row.
 | shooting | 4 | 4.00 | 4.00 | 5.14e-06 (N=200) | 1.28e-09 (N=1600) | 499.8 (426.5-581.6) |
 <!-- END:stationary_double_well -->
 
-**Morse potential** (`D = 12`, `α = 1`, five bound states, four compared)
+Morse potential (`D = 12`, `α = 1`, five bound states, four compared):
 
 <!-- BEGIN:stationary_morse -->
 | Method | Nominal order | Fitted order | Last-pair order | Error, smallest N | Error, largest N | Time at largest N (ms) |
@@ -122,9 +137,9 @@ well. "Time" is the wall time of one solve at the largest N in the row.
 | shooting | 4 | 4.00 | 4.00 | 2.87e-04 (N=200) | 7.06e-08 (N=1600) | 457.9 (428.7-547.0) |
 <!-- END:stationary_morse -->
 
-**Cost of `fd4`.** Both finite-difference matrices are banded, yet `fd4` is far slower than
-`fd2` at large N in the tables above. The time goes into the eigenvectors, not the method:
-`scipy.linalg.eig_banded` (LAPACK's banded symmetric driver) finds the eigenvalues quickly, but
+Both finite-difference matrices are banded, yet `fd4` is far slower than `fd2` at large N in the
+tables above. The time goes into computing the eigenvectors. `scipy.linalg.eig_banded` (LAPACK's
+banded symmetric driver) finds the eigenvalues quickly, but
 to return eigenvectors it forms the N × N orthogonal matrix that reduces the band to tridiagonal
 form, which grows roughly like N³. Timing the drivers on the harmonic-oscillator matrices:
 
@@ -139,9 +154,9 @@ form, which grows roughly like N³. Timing the drivers on the harmonic-oscillato
 Inverse iteration with the banded matrix (or `scipy.sparse.linalg.eigsh` in shift-invert mode)
 would avoid forming that matrix.
 
-**Hard walls**: infinite well on `[0, 1]` and linear ramp `V = x` on `[0, 30]`, both with exact
-levels and eigenfunctions that have a non-zero slope at the wall (`fourier` is periodic and is
-left out; `chebyshev` is spectral, so no order is given):
+Hard walls: the infinite well on `[0, 1]` and the linear ramp `V = x` on `[0, 30]`, both with
+exact levels and eigenfunctions that have a non-zero slope at the wall (`fourier` is periodic and
+is left out; `chebyshev` is spectral, so no order is given):
 
 <!-- BEGIN:hard_walls -->
 | Problem | Method | Error, smallest N | Error, largest N | Last-pair order |
@@ -158,7 +173,7 @@ left out; `chebyshev` is spectral, so no order is given):
 | linear-ramp | chebyshev | 3.53e-04 (N=32) | 1.92e-13 (N=96) | spectral |
 <!-- END:hard_walls -->
 
-The five-point stencil of `fd4` needs ψ one node *outside* the box next to each wall. The solver
+The five-point stencil of `fd4` needs ψ one node outside the box next to each wall. The solver
 uses the odd extension `ψ(x_wall − h) = −ψ(x_wall + h)`, which is consistent with `ψ = 0` and
 `ψ'' = 2(V − E)ψ = 0` at the wall and keeps the method fourth order at hard walls. A zero ghost
 value makes it first order there; the three potentials above cannot show the difference, because
@@ -193,12 +208,12 @@ Tunnel splitting of the lowest double-well doublet from every method:
 
 ![Potentials, energy levels and wave functions](docs/figures/stationary_states.png)
 
-Notes. `shooting` solves the same discrete problem as the Numerov matrix (the Numerov recurrence
+`shooting` solves the same discrete problem as the Numerov matrix (the Numerov recurrence
 with a Dirichlet wall), so the two agree to the bisection tolerance on the same grid; shooting
 only adds the cost of Python loops. The shooting node count relies on `h²(V_max − V_min) < 6`
 (otherwise the Numerov coefficient changes sign); the solver warns when this is violated, which
 is why its grid sizes start higher than the others. For the Morse potential the box has to be
-wide enough that the *left wall* does not truncate the wave function. Moving the wall closer
+wide enough that the left wall does not truncate the wave function. Moving the wall closer
 leaves an error that no resolution can remove:
 
 <!-- BEGIN:morse_box -->
@@ -212,7 +227,7 @@ leaves an error that no resolution can remove:
 
 Test problem: a Gaussian coherent state in the harmonic oscillator, whose exact evolution is
 known analytically (it follows the classical orbit). Temporal errors are measured against the
-*exact* propagator `exp(−iHt)` of each method's own spatial operator (dense eigendecomposition on
+exact propagator `exp(−iHt)` of each method's own spatial operator (dense eigendecomposition on
 a deliberately small grid), so spatial error cannot contaminate them; spatial errors use the
 analytic solution with a time step small enough not to matter.
 
@@ -226,8 +241,9 @@ analytic solution with a time step small enough not to matter.
 | rk4 | 4 | 4.00 | 4.00 | 4.00 | 4.00 | 2.00 | 2.00 |
 <!-- END:timedep_orders -->
 
-("2D" columns: a 20 × 20 grid, anisotropic oscillator; "1D": 64 points. For `rk4` the first
-refinements must satisfy the stability limit, so its step sequence starts at smaller `dt`.)
+The 2D columns use a 20 × 20 grid and an anisotropic oscillator, the 1D columns 64 points. For
+`rk4` the first refinements must satisfy the stability limit, so its step sequence starts at
+smaller `dt`.
 
 #### Conservation of norm and energy, and cost
 
@@ -256,9 +272,10 @@ Same grid and time step for all methods (1D: N = 512, L = 30, `t = 10`; 2D: 96 �
 
 ![Norm drift, energy drift and cost versus accuracy](docs/figures/conservation.png)
 
-Crank–Nicolson with FD2 is limited by its *spatial* error on a fixed grid (the right panel
-flattens at the spatial error level), whereas the split-step error keeps decreasing over the whole plotted range. This test problem is smooth and periodic-friendly, so it favours
-spectral methods; it says nothing about potentials with discontinuities or boundaries.
+Crank-Nicolson with FD2 is limited by its spatial error on a fixed grid (the right panel
+flattens at the spatial error level), whereas the split-step error keeps decreasing over the
+whole plotted range. This test problem is smooth and periodic-friendly, so it favours spectral
+methods; it says nothing about potentials with discontinuities or boundaries.
 
 RK4 is not unitary and conditionally stable. On the imaginary axis its stability function
 `R(w) = 1 + w + w²/2 + w³/6 + w⁴/24` satisfies `|R(−iz)| ≤ 1` exactly for `z ≤ 2√2 ≈ 2.83`, so
@@ -280,7 +297,7 @@ eigenmode, which then grows by the factor in the third column at every step):
 A Gaussian placed in the left well, with the width of the local harmonic ground state and built
 without any eigensolver, is mostly a superposition of the lowest doublet, so its probability
 `P(x < 0, t)` oscillates between the wells with angular frequency `E₁ − E₀`. The split-step run
-(256 Fourier points) is compared with the splitting from the *Chebyshev* stationary solver, a
+(256 Fourier points) is compared with the splitting from the Chebyshev stationary solver, a
 different basis and method. The fast oscillations inside each well are removed with a Gaussian
 low-pass filter, and `a + b cos(ωt) + c sin(ωt)` is fitted to the filtered signal over 1.1
 periods. As a control, the last columns give the splitting of the one-step Strang propagator
@@ -299,12 +316,11 @@ Reference E1 - E0 (chebyshev, N = 200): 9.716349909e-03
 ![Density in the double well versus time](docs/figures/double_well_tunnelling.png)
 
 The fit reproduces the propagator's own splitting, and both differ from the stationary value by
-a relative amount that falls as `dt²`: the remaining difference is the splitting error of the
-Strang scheme, not of the measurement. (Version 0.1 started from the two eigenvectors of the same
-Fourier Hamiltonian and timed the first minimum of `P(x < 0)`; that was a consistency check,
-and its close agreement turned out to be accidental, see the [changelog](CHANGELOG.md).)
+a relative amount that falls as `dt²`, so the remaining difference is the splitting error of the
+Strang scheme. Version 0.1 measured this differently, and its close agreement turned out to be
+accidental; see the [changelog](CHANGELOG.md).
 
-#### 2D scattering off a Gaussian bump: split-step versus Crank–Nicolson
+#### 2D scattering off a Gaussian bump: split-step versus Crank-Nicolson
 
 ![2D wave packet hitting a Gaussian bump](docs/figures/wavepacket_2d.png)
 
@@ -325,8 +341,8 @@ and its close agreement turned out to be accidental, see the [changelog](CHANGEL
 Both propagators are unitary, but the two wave functions differ noticeably. The difference
 shrinks when the grid is refined (compare the two rows above), consistent with the `O(h²)`
 numerical dispersion of the three-/five-point finite-difference Laplacian, which the Fourier
-method does not have. (The time step is the same in both rows; this attribution to spatial
-dispersion is inferred from the scaling, not isolated by a separate experiment.)
+method does not have. The time step is the same in both rows; I infer the attribution to spatial
+dispersion from the scaling and have not isolated it by a separate experiment.
 
 ### 3. Tunnelling through a barrier
 
@@ -381,9 +397,8 @@ grid spacing, the difference changes size and even sign:
 <!-- END:tunneling_packet_later -->
 
 Its source has not been isolated (measurement time, box length, the sharp barrier on the grid),
-so the table supports agreement within the size of these differences and no more. What it does
-show clearly is that the momentum-averaged `T` is the right reference: `T(mean energy)` is off by
-far more.
+so the table supports agreement within the size of these differences and no more. It does show
+that the momentum-averaged `T` is the right reference: `T(mean energy)` is off by far more.
 
 ### 4. Poisson and heat equations on the unit square
 
@@ -429,7 +444,7 @@ Discretisation error of the 5-point scheme (direct solve):
 
 ![Residual histories and iteration counts of the Poisson solvers](docs/figures/poisson_solvers.png)
 
-Notes. Plain CG needs twice the iterations when `n` doubles (the condition number grows like
+Plain CG needs twice the iterations when `n` doubles (the condition number grows like
 `n²`), IC(0) lowers the count by a constant factor but not its growth, and multigrid
 (stand-alone V-cycles, or as a CG preconditioner) is independent of `n`. A V-cycle is a sequence
 of NumPy operations on small arrays, so its overhead per iteration is large on small grids; the
@@ -441,7 +456,7 @@ constant (the two rows coincide exactly; the test suite asserts it). Multigrid u
 Jacobi smoothing (ω = 0.8, 2 pre- and 2 post-sweeps), full weighting, bilinear prolongation and
 a direct solve on the 3 × 3 grid.
 
-**Heat equation** `u_t = Δu`: the initial datum is a discrete eigenvector, so the exact
+Heat equation `u_t = Δu`: the initial datum is a discrete eigenvector, so the exact
 semi-discrete solution is known and only the temporal error is measured.
 
 <!-- BEGIN:heat_orders -->
@@ -451,7 +466,7 @@ semi-discrete solution is known and only the temporal error is measured.
 | crank-nicolson | 3.57e-04 | 9.02e-05 | 2.26e-05 | 5.66e-06 | 2.00 |
 <!-- END:heat_orders -->
 
-Linear solvers inside the Crank–Nicolson time loop (63 × 63 grid, 20 steps, tolerance 1e-12).
+Linear solvers inside the Crank-Nicolson time loop (63 × 63 grid, 20 steps, tolerance 1e-12).
 The matrix `I/(θ dt) − Δ_h` is the same at every step, so each solver is set up once (sparse LU
 factors, IC(0) factor or multigrid hierarchy) and reused for all right-hand sides; the total
 includes that setup:
@@ -472,7 +487,7 @@ the sparse LU factors. A CG iteration costs one matrix-vector product, plus two 
 with IC(0) or one V-cycle with multigrid. The shifted operator is much better conditioned than
 the pure Laplacian, so even plain CG needs few iterations per step; the preconditioners reduce
 the count further, but each of their iterations costs more. Which option wins depends on the grid
-size and the machine, so the ranking above is printed from the run, not written by hand.
+size and the machine, so the ranking above is printed from the run.
 
 ![Heat equation: temporal convergence and a diffusing patch](docs/figures/heat_equation.png)
 
@@ -514,7 +529,7 @@ for every solver; the order of every Dirichlet solver on the infinite well and o
 shooting ≡ Numerov on the same grid; analytic limits of `T(E)`; second-order convergence of the
 scattering solver; grid-independent multigrid contraction; CG iteration growth and pinned
 iteration counts; `L Lᵀ = A` on the sparsity pattern for the IC(0) factor, and its application
-as plain triangular substitution; zero right-hand sides; Crank–Nicolson's undershoot on
+as plain triangular substitution; zero right-hand sides; Crank-Nicolson's undershoot on
 discontinuous heat data; that the README tables equal the results file; and CLI behaviour,
 including clear errors for invalid arguments. `tests/test_roadmap.py` holds the known-answer
 tests of the [roadmap](docs/ROADMAP.md), marked as expected failures.
@@ -524,7 +539,7 @@ tests of the [roadmap](docs/ROADMAP.md), marked as expected failures.
 
 ## Limitations
 
-- **These are educational solvers**, written for clarity and to study methods side by side. They
+- These are educational solvers, written for clarity and to study methods side by side. They
   are not optimised, not a substitute for production libraries, and have not been validated
   beyond the test problems shown.
 - Python loops dominate the shooting solver; no JIT (Numba) is used, so its timings are not
@@ -539,7 +554,7 @@ tests of the [roadmap](docs/ROADMAP.md), marked as expected failures.
   placed between grid points deliberately to retain second-order behaviour.
 - Multigrid works only on `n = 2^k − 1` grids, with a plain weighted-Jacobi smoother; the
   `ic0` preconditioner is specialised to the five-point matrix.
-- Crank–Nicolson for the heat equation is A-stable but not L-stable. On the discontinuous hot
+- Crank-Nicolson for the heat equation is A-stable but not L-stable. On the discontinuous hot
   patch the stiffest modes change sign at every step, so the first step undershoots below zero
   (the test suite asserts this) before the oscillation is damped; the figure at `t = 0.02` is
   past that. Backward Euler stays non-negative. A start with backward-Euler half-steps
@@ -570,30 +585,27 @@ Python 3.13.17, NumPy 2.5.3, SciPy 1.18.1, Linux
 
 ## Documentation
 
-- [CHANGELOG.md](CHANGELOG.md): what the independent review found and what version 0.2 changed.
+- [CHANGELOG.md](CHANGELOG.md): what the independent automated review found and what version 0.2 changed.
 - [docs/ROADMAP.md](docs/ROADMAP.md): planned extensions, each with a failing test that defines
   done.
 
 ## Development
 
-AI-assisted development. I chose the problems and the rules for checking the solvers. An
-independent review of version 0.1 re-ran the report, reproduced the claims with its own scripts
-and injected bugs to see whether the tests catch them. It found the problems listed in the
-[changelog](CHANGELOG.md): `fd4` was first order at hard walls, the heat-equation benchmark
-refactorised a constant matrix at every step, one validation was not independent, and the
-timings were single runs. Version 0.2 fixes them. The roadmap items are mine to implement.
+I chose the problems and the rules for checking the solvers. An independent automated review of version
+0.1 re-ran the report, reproduced the claims with its own scripts and injected bugs to see
+whether the tests catch them. It found the problems listed in the [changelog](CHANGELOG.md):
+`fd4` was first order at hard walls, the heat-equation benchmark refactorised a constant matrix
+at every step, one validation was not independent, and the timings were single runs. Version 0.2
+fixes them. The roadmap items are mine to implement.
 
-The rules that keep the results honest:
+These are the rules I set:
 
 * every solver is compared with an exact result (oscillator, Morse, infinite well, Airy levels,
   rectangular-barrier `T(E)`, coherent states) or with an independent method;
-* orders are measured, not assumed, on refinements where `h` or `dt` halves exactly; temporal
-  errors are measured against the exact propagator of the same spatial operator;
+* orders are measured on refinements where `h` or `dt` halves exactly, and temporal errors are
+  measured against the exact propagator of the same spatial operator;
 * the tests are checked by injecting bugs: each injected bug must make at least one test fail;
 * every table in this README is rendered from `docs/results/results.json`, and a test fails if
   the README and the JSON disagree;
 * wall times are medians of repeated runs, and rankings that depend on them are printed from the
-  run, not written by hand;
-* CI runs lint, type checks and tests on Linux, macOS and Windows, Python 3.10 to 3.13.
-
-Author: Georgii Baiev, physics student. MIT license, see [LICENSE](LICENSE).
+  run.
