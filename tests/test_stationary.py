@@ -1,9 +1,14 @@
 import numpy as np
 import pytest
 
-from pdeqs.convergence import stationary_study
-from pdeqs.potentials import DoubleWell, Harmonic, InfiniteWell, LinearRamp, Morse
-from pdeqs.stationary import SOLVERS, align_sign, chebyshev_matrix, clenshaw_curtis_weights
+from schrodinger_bench.convergence import stationary_study
+from schrodinger_bench.potentials import DoubleWell, Harmonic, InfiniteWell, LinearRamp, Morse
+from schrodinger_bench.stationary import (
+    SOLVERS,
+    align_sign,
+    chebyshev_matrix,
+    clenshaw_curtis_weights,
+)
 
 # (n_points, tolerance on the max error of the 4 lowest levels)
 HARMONIC_CASES = {

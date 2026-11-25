@@ -3,7 +3,7 @@ import pytest
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve_triangular
 
-from pdeqs.elliptic import (
+from schrodinger_bench.elliptic import (
     Multigrid,
     PoissonSolver,
     apply_operator,
@@ -143,7 +143,7 @@ def test_heat_linear_solvers_agree_and_decay_is_monotone():
 
 def test_heat_solve_sets_up_the_linear_solver_once(monkeypatch):
     """The step matrix is constant: one LU (or one pair of IC(0) triangular factors) per run."""
-    import pdeqs.elliptic as el
+    import schrodinger_bench.elliptic as el
 
     calls: list[int] = []
     real_splu = el.splu

@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from pdeqs.convergence import rk4_amplification, spatial_study, temporal_study
-from pdeqs.grid import Grid
-from pdeqs.timedep import (
+from schrodinger_bench.convergence import rk4_amplification, spatial_study, temporal_study
+from schrodinger_bench.grid import Grid
+from schrodinger_bench.timedep import (
     RK4,
     CrankNicolson,
     SplitStepFourier,

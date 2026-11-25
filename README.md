@@ -1,12 +1,12 @@
-# pde-quantum-solvers
+# schrodinger-bench
 
-[![CI](https://github.com/GodelKu/pde-quantum-solvers/actions/workflows/ci.yml/badge.svg)](https://github.com/GodelKu/pde-quantum-solvers/actions/workflows/ci.yml) ![Python 3.10 to 3.13](https://img.shields.io/badge/python-3.10%20to%203.13-blue) ![License MIT](https://img.shields.io/badge/license-MIT-green)
+[![CI](https://github.com/GodelKu/schrodinger-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/GodelKu/schrodinger-bench/actions/workflows/ci.yml) ![Python 3.10 to 3.13](https://img.shields.io/badge/python-3.10%20to%203.13-blue) ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
 Numerical solvers for the Schrödinger equation and related PDEs, written from scratch so that
 they can be compared with each other and with exact results. For each method I measure the
 accuracy, the empirical order of convergence, the conservation of norm and energy, and the cost.
 
-Every table and figure below comes from running `pdeqs report`. The tables are rendered from a
+Every table and figure below comes from running `sbench report`. The tables are rendered from a
 results file, and a test checks that the two match. The numbers refer to the environment listed
 in [Reproducing the results](#reproducing-the-results). Version 0.2 fixes the problems found by
 an independent automated review ([changelog](CHANGELOG.md)).
@@ -18,24 +18,24 @@ AI-assisted development.
 
 ```bash
 pip install -e ".[dev]"
-pdeqs list
-pdeqs convergence crank-nicolson            # temporal and spatial order of Crank-Nicolson
-pdeqs convergence numerov --potential morse
-pdeqs eigen --potential harmonic --method chebyshev -n 80 --states 6
-pdeqs evolve --dim 2 --t-final 5 --steps 1000
-pdeqs tunneling --energy 0.72
-pdeqs poisson --solver mg-cg -n 255
-pdeqs report --out docs --readme README.md  # regenerate every figure and table below
+sbench list
+sbench convergence crank-nicolson            # temporal and spatial order of Crank-Nicolson
+sbench convergence numerov --potential morse
+sbench eigen --potential harmonic --method chebyshev -n 80 --states 6
+sbench evolve --dim 2 --t-final 5 --steps 1000
+sbench tunneling --energy 0.72
+sbench poisson --solver mg-cg -n 255
+sbench report --out docs --readme README.md  # regenerate every figure and table below
 ```
 
-`pdeqs convergence <method>` prints the error for a sequence of refinements, the observed
+`sbench convergence <method>` prints the error for a sequence of refinements, the observed
 order between successive refinements and a least-squares fitted order, and writes a PNG
 (`--no-plot` to skip, `--quick` for fewer refinements). The solvers can also be called from
 Python:
 
 ```python
-from pdeqs.potentials import Morse
-from pdeqs.stationary import SOLVERS
+from schrodinger_bench.potentials import Morse
+from schrodinger_bench.stationary import SOLVERS
 
 pot = Morse()
 res = SOLVERS["numerov"].solve(pot, *pot.box, n_points=800, n_states=4)
@@ -494,7 +494,7 @@ size and the machine, so the ranking above is printed from the run.
 ## Project layout
 
 ```
-src/pdeqs/
+src/sbench/
   grid.py         uniform 1D/2D grids
   potentials.py   harmonic, double well, Morse, infinite well, linear ramp, barrier (+ exact T(E))
   stationary.py   six eigenvalue solvers behind one interface
@@ -506,7 +506,7 @@ src/pdeqs/
   tables.py       renders the README tables from results.json
   timing.py       repeated wall-time measurements (median and range)
   plotting.py     matplotlib style
-  cli.py          `pdeqs` command
+  cli.py          `sbench` command
 tests/            pytest suite (test_readme_sync.py: README = rendered JSON;
                   test_roadmap.py: known answers of the planned extensions)
 tools/            fill_readme.py
@@ -569,11 +569,11 @@ tests of the [roadmap](docs/ROADMAP.md), marked as expected failures.
 
 ```bash
 pip install -e ".[dev]"
-pdeqs report --out docs --readme README.md   # all studies, a few minutes
+sbench report --out docs --readme README.md   # all studies, a few minutes
 python tools/fill_readme.py                  # README tables from docs/results/results.json only
 ```
 
-Every table in this README is rendered from `docs/results/results.json` by `pdeqs.tables`;
+Every table in this README is rendered from `docs/results/results.json` by `schrodinger_bench.tables`;
 `tests/test_readme_sync.py` fails if the README, `docs/results/tables.md` and the JSON disagree,
 and recomputes a few of the numbers from the code.
 

@@ -1,7 +1,8 @@
 """README tables, docs/results/tables.md and docs/results/results.json must agree.
 
 Every block between ``<!-- BEGIN:name -->`` markers in README.md is rendered from the JSON by
-``pdeqs.tables``. Regenerate everything with ``pdeqs report --out docs --readme README.md``, or
+``schrodinger_bench.tables``. Regenerate everything with
+``sbench report --out docs --readme README.md``, or
 refresh the README alone with ``python tools/fill_readme.py``.
 """
 
@@ -13,11 +14,16 @@ from typing import Any
 import numpy as np
 import pytest
 
-from pdeqs.elliptic import heat_exact_semidiscrete, heat_solve, manufactured_problem, solve_poisson
-from pdeqs.potentials import DoubleWell, Harmonic, InfiniteWell
-from pdeqs.stationary import SOLVERS
-from pdeqs.tables import load_results, readme_blocks, render_tables, tables_markdown
-from pdeqs.tunneling import packet_transmission, transmission_fd
+from schrodinger_bench.elliptic import (
+    heat_exact_semidiscrete,
+    heat_solve,
+    manufactured_problem,
+    solve_poisson,
+)
+from schrodinger_bench.potentials import DoubleWell, Harmonic, InfiniteWell
+from schrodinger_bench.stationary import SOLVERS
+from schrodinger_bench.tables import load_results, readme_blocks, render_tables, tables_markdown
+from schrodinger_bench.tunneling import packet_transmission, transmission_fd
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "docs" / "results" / "results.json"
@@ -99,8 +105,8 @@ def test_heat_temporal_error_reproduces(results):
 
 
 def test_strang_propagator_splitting_reproduces(results):
-    from pdeqs.grid import Grid
-    from pdeqs.report import _propagator_splitting
+    from schrodinger_bench.grid import Grid
+    from schrodinger_bench.report import _propagator_splitting
 
     d = results["timedep"]["double_well_dynamics"]
     row = d["rows"][0]

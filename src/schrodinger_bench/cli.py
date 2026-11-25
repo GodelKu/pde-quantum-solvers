@@ -1,4 +1,4 @@
-"""Command-line interface: ``pdeqs <command> ...`` (also ``python -m pdeqs``)."""
+"""Command-line interface: ``sbench <command> ...`` (also ``python -m schrodinger_bench``)."""
 
 from __future__ import annotations
 
@@ -228,9 +228,9 @@ def cmd_list(_: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="pdeqs", description="Educational PDE / Schrodinger solvers and their convergence."
+        prog="sbench", description="Educational PDE / Schrodinger solvers and their convergence."
     )
-    p.add_argument("--version", action="version", version=f"pdeqs {__version__}")
+    p.add_argument("--version", action="version", version=f"sbench {__version__}")
     sub = p.add_subparsers(dest="command", required=True)
 
     c = sub.add_parser("convergence", help="empirical order of convergence of one method")

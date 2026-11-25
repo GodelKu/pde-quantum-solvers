@@ -10,9 +10,9 @@ import numpy as np
 import pytest
 from scipy.optimize import minimize_scalar
 
-from pdeqs import elliptic, stationary, timedep, tunneling
-from pdeqs.grid import Grid
-from pdeqs.potentials import Harmonic, Morse, transmission_rectangular
+from schrodinger_bench import elliptic, stationary, timedep, tunneling
+from schrodinger_bench.grid import Grid
+from schrodinger_bench.potentials import Harmonic, Morse, transmission_rectangular
 
 
 @pytest.mark.xfail(strict=True, reason="roadmap item 1")
@@ -53,7 +53,7 @@ def test_imaginary_time_ground_state() -> None:
 
 @pytest.mark.xfail(strict=True, reason="roadmap item 3")
 def test_two_dimensional_oscillator_degeneracies() -> None:
-    from pdeqs.stationary2d import eigenvalues_2d
+    from schrodinger_bench.stationary2d import eigenvalues_2d
 
     e = eigenvalues_2d(lambda xx, yy: 0.5 * (xx**2 + yy**2), 16.0, 127, 10)
     exact = np.array([1, 2, 2, 3, 3, 3, 4, 4, 4, 4], dtype=float)

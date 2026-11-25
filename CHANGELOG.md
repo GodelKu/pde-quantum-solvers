@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+Renamed the project from `pde-quantum-solvers` to `schrodinger-bench`. The import package is now
+`schrodinger_bench` (was `pdeqs`) and the command is `sbench` (was `pdeqs`). The old GitHub address
+redirects to the new one. No numerical code changed.
+
 ## 0.2.0
 
 After an independent review. The review re-ran the report,

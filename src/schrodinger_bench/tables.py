@@ -1,6 +1,6 @@
 """Markdown tables for the README, rendered from ``docs/results/results.json`` only.
 
-``pdeqs report`` runs the studies and writes the JSON; :func:`render_tables` turns that JSON into
+``sbench report`` runs the studies and writes the JSON; :func:`render_tables` turns that JSON into
 the blocks between ``<!-- BEGIN:name -->`` and ``<!-- END:name -->`` in README.md.  Because the
 tables depend on nothing but the JSON, ``tests/test_readme_sync.py`` can check that README,
 ``tables.md`` and the JSON agree without rerunning anything, and ``tools/fill_readme.py``

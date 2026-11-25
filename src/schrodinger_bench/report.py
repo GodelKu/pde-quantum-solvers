@@ -1,9 +1,9 @@
-"""Run every study and write PNG figures, ``results.json`` and ``tables.md`` (``pdeqs report``).
+"""Run every study and write PNG figures, ``results.json`` and ``tables.md`` (``sbench report``).
 
 Nothing here is hand-typed: the studies write their numbers to ``docs/results/results.json``,
-and every README table is rendered from that JSON by :mod:`pdeqs.tables` into the blocks between
-``<!-- BEGIN:name -->`` / ``<!-- END:name -->`` markers.  Wall times are the median of
-:data:`pdeqs.timing.REPEATS` runs after one warm-up run, with their range.
+and every README table is rendered from that JSON by :mod:`schrodinger_bench.tables` into the
+blocks between ``<!-- BEGIN:name -->`` / ``<!-- END:name -->`` markers. Wall times are the median of
+:data:`schrodinger_bench.timing.REPEATS` runs after one warm-up run, with their range.
 """
 
 from __future__ import annotations
@@ -105,7 +105,10 @@ def _clock(fn: Callable[[], object], repeats: int) -> dict[str, float]:
 
 
 def study_to_dict(s: ConvergenceStudy) -> dict[str, Any]:
-    """Errors and orders of a study (single-run timings are left out; see :mod:`pdeqs.timing`)."""
+    """Errors and orders of a study.
+
+    Single-run timings are left out; see :mod:`schrodinger_bench.timing`.
+    """
     rows = [{k: v for k, v in r.items() if k != "seconds"} for r in s.rows()]
     return {
         "name": s.name,

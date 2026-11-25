@@ -33,5 +33,5 @@ jobs:
         run: pytest -q
       - name: CLI smoke test
         run: |
-          pdeqs --help
-          pdeqs convergence crank-nicolson --quick --no-plot
+          sbench --help
+          sbench convergence crank-nicolson --quick --no-plot

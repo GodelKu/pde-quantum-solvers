@@ -3,8 +3,8 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pde-quantum-solvers"
-version = "0.2.0"
+name = "schrodinger-bench"
+version = "0.3.0"
 description = "From-scratch numerical solvers for the Schrodinger equation and related PDEs, compared on accuracy, conservation and cost."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -29,16 +29,16 @@ dependencies = [
 dev = ["pytest==9.1.1", "ruff==0.16.9", "mypy==2.3.1"]
 
 [project.urls]
-Repository = "https://github.com/GodelKu/pde-quantum-solvers"
+Repository = "https://github.com/GodelKu/schrodinger-bench"
 
 [project.scripts]
-pdeqs = "pdeqs.cli:main"
+sbench = "schrodinger_bench.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-pdeqs = ["py.typed"]
+schrodinger_bench = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

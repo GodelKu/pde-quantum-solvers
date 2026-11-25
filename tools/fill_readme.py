@@ -1,8 +1,8 @@
 """Fill the README tables from docs/results/results.json without rerunning the studies.
 
 Every block between ``<!-- BEGIN:name -->`` and ``<!-- END:name -->`` is rendered by
-``pdeqs.tables`` from the JSON alone, and ``tests/test_readme_sync.py`` fails if README,
-``docs/results/tables.md`` and the JSON disagree.  ``pdeqs report --out docs --readme README.md``
+``schrodinger_bench.tables`` from the JSON alone, and ``tests/test_readme_sync.py`` fails if README,
+``docs/results/tables.md`` and the JSON disagree.  ``sbench report --out docs --readme README.md``
 reruns everything; this script only refreshes the README after the prose around the tables was
 edited.  Prose outside the blocks avoids result numbers.
 """
@@ -15,7 +15,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from pdeqs.tables import fill, load_results, render_tables, tables_markdown  # noqa: E402
+from schrodinger_bench.tables import (  # noqa: E402
+    fill,
+    load_results,
+    render_tables,
+    tables_markdown,
+)
 
 
 def main() -> int:

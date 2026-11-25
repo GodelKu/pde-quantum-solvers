@@ -3,8 +3,8 @@ import json
 import numpy as np
 import pytest
 
-from pdeqs.report import _clean, _fit_frequency
-from pdeqs.tables import sci, timing
+from schrodinger_bench.report import _clean, _fit_frequency
+from schrodinger_bench.tables import sci, timing
 
 
 def test_frequency_fit_ignores_fast_oscillations():

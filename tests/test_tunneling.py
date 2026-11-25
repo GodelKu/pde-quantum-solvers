@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from pdeqs.potentials import RectangularBarrier, transmission_rectangular
-from pdeqs.tunneling import (
+from schrodinger_bench.potentials import RectangularBarrier, transmission_rectangular
+from schrodinger_bench.tunneling import (
     averaged_transmission,
     packet_transmission,
     snap_width,

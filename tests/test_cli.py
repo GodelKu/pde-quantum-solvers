@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from pdeqs.cli import main
-from pdeqs.report import md_table, update_readme
+from schrodinger_bench.cli import main
+from schrodinger_bench.report import md_table, update_readme
 
 
 def test_convergence_cli_prints_observed_orders(capsys, tmp_path):
